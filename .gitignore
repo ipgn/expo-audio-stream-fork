@@ -1,5 +1,8 @@
 **/dist
-**/build
+
+# Allow specific build folders for npm package
+!/build/
+!/plugin/build/
 
 # OSX
 #
@@ -11,7 +14,6 @@ jsconfig.json
 
 # Xcode
 #
-build/
 *.pbxuser
 !default.pbxuser
 *.mode1v3

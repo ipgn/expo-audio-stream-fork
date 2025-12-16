@@ -1,120 +1,302 @@
-# Monorepo for @siteed/expo-audio
+# @siteed/expo-audio-studio
 
-This monorepo contains the following packages:
-- `@siteed/expo-audio-studio` (formerly `@siteed/expo-audio-stream`)
-- `@siteed/expo-audio-ui`
-- `@siteed/react-native-essentia`
-- `@siteed/sherpa-onnx.rn` (in development)
+[![kandi X-Ray](https://kandi.openweaver.com/badges/xray.svg)](https://kandi.openweaver.com/typescript/siteed/expo-audio-studio)
+[![Version](https://img.shields.io/npm/v/@siteed/expo-audio-studio.svg)](https://www.npmjs.com/package/@siteed/expo-audio-studio)
+[![Dependency Status](https://img.shields.io/npm/dt/@siteed/expo-audio-studio.svg)](https://www.npmjs.com/package/@siteed/expo-audio-studio)
+[![License](https://img.shields.io/npm/l/@siteed/expo-audio-studio.svg)](https://www.npmjs.com/package/@siteed/expo-audio-studio)
+
+<div align="center">
+  <p align="center">
+    <strong>Comprehensive audio studio library for React Native and Expo with recording, analysis, visualization, and streaming capabilities across iOS, Android, and web platforms.</strong>
+  </p>
+
+  <div style="display: flex; justify-content: center; gap: 20px; margin: 30px 0;">
+    <div>
+      <h3>iOS Demo</h3>
+      <img src="../../docs/ios.gif" alt="iOS Demo" width="280" />
+    </div>
+    <div>
+      <h3>Android Demo</h3>
+      <img src="../../docs/android.gif" alt="Android Demo" width="280" />
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 20px;">
+    <p><strong>Try AudioPlayground: Complete audio processing app built with this library</strong></p>
+    <div style="display: flex; justify-content: center; gap: 20px; margin: 10px 0;">
+      <a href="https://apps.apple.com/app/audio-playground/id6739774966">
+        <img src="https://developer.apple.com/app-store/marketing/guidelines/images/badge-download-on-the-app-store.svg" alt="Download on the App Store" height="40" />
+      </a>
+      <a href="https://play.google.com/store/apps/details?id=net.siteed.audioplayground">
+        <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="40" />
+      </a>
+    </div>
+  </div>
+
+  <a href="https://deeeed.github.io/expo-audio-stream/playground" style="text-decoration:none;">
+    <div style="display:inline-block; padding:10px 20px; background-color:#007bff; color:white; border-radius:5px; font-size:16px;">
+      Try it in the Playground
+    </div>
+  </a>
+</div>
 
 **Give it a GitHub star 🌟, if you found this repo useful.**
 [![GitHub stars](https://img.shields.io/github/stars/deeeed/expo-audio-stream.svg?style=social&label=Star&maxAge=2592000)](https://github.com/deeeed/expo-audio-stream)
 
-## ❤️ Support This Project
+> **Note:** This package was formerly known as `@siteed/expo-audio-stream`. The name has been changed to better reflect the expanded capabilities beyond just audio streaming.
 
-Love this repo? Support my journey in audio, AI, & blockchain, and help fund new tools! Sponsor me.
+## Features
 
-[![Sponsor this project](https://img.shields.io/github/sponsors/deeeed?label=Sponsor&logo=GitHub)](https://github.com/sponsors/deeeed)
+- Real-time audio streaming across iOS, Android, and web.
+- Audio input device detection and selection:
+  - List and select from available audio input devices
+  - View detailed device capabilities (sample rates, channels, bit depths)
+  - Support for Bluetooth, USB, and wired devices
+  - Automatic device management with fallback options
+  - Intelligent detection refresh for Bluetooth devices
+- Dual-stream recording capabilities:
+  - Simultaneous raw PCM and compressed audio recording
+  - Compression formats: OPUS or AAC
+  - Configurable bitrate for compressed audio
+  - Optimized storage for both high-quality and compressed formats
+- Intelligent interruption handling:
+  - Automatic pause/resume during phone calls
+  - Configurable automatic resumption
+  - Detailed interruption event callbacks
+- Configurable intervals for audio buffer receipt.
+- Automated microphone permissions setup in managed Expo projects.
+- Background audio recording on iOS.
+- Audio features extraction during recording.
+- Consistent WAV PCM recording format across all platforms.
+- Keep recording active while app is in background
+- Zero-latency recording with preparation API:
+  - Pre-initialize audio recording to eliminate startup delay
+  - Prepare permissions, audio buffers, and sessions in advance
+  - Start recording instantly when needed
+- Rich notification system for recording status:
+  - Android: Live waveform visualization in notifications
+  - Android: Fully customizable notification appearance and actions
+  - iOS: Media player integration
+- Advanced audio analysis capabilities:
+  - Mel spectrogram generation for machine learning and visualization
+  - Comprehensive audio feature extraction (MFCC, spectral features, etc.)
+  - Lightweight waveform preview generation
+- Precision audio manipulation:
+  - Advanced audio splitting and trimming API
+  - Support for trimming multiple segments in a single operation
+  - Ability to keep or remove specific time ranges
+- Complete ecosystem:
+  - Full-featured AudioPlayground application showcasing advanced API usage
+  - Ready-to-use UI components via [@siteed/expo-audio-ui](https://github.com/deeeed/expo-audio-stream/tree/main/packages/expo-audio-ui) package
+  - Visualizations, waveforms, and audio controls that can be directly incorporated into your app
 
-<div align="center">
-  <h2>Try them out</h2>
-  <p><a href="https://deeeed.github.io/expo-audio-stream">https://deeeed.github.io/expo-audio-stream</a></p>
-</div>
+## Audio Analysis Features
 
-## Example Applications
+Extract powerful audio features for advanced audio processing and visualization:
 
-The monorepo includes several example applications in the `/apps` directory that demonstrate different use cases and integration patterns:
+```typescript
+// Extract audio analysis with specific features enabled
+const analysis = await extractAudioAnalysis({
+  fileUri: 'path/to/recording.wav',
+  features: {
+    energy: true,     // Overall energy of the audio
+    rms: true,        // Root mean square (amplitude)
+    zcr: true,        // Zero-crossing rate
+    mfcc: true,       // Mel-frequency cepstral coefficients
+    spectralCentroid: true,  // Brightness of sound
+    tempo: true,      // Estimated BPM
+  }
+});
+```
 
-### Audio Playground
+### Available Audio Features
 
-A fully-featured showcase app that demonstrates the capabilities of all the libraries. The audio playground app is available on app stores and serves as a comprehensive showcase of audio processing features, UI components, and integrations.
+- **Basic Analysis**: RMS, energy, amplitude range, zero-crossing rate
+- **Spectral Features**: Spectral centroid, flatness, rolloff, bandwidth
+- **Advanced Analysis**: 
+  - MFCC (Mel-frequency cepstral coefficients)
+  - Chromagram (pitch class representation)
+  - Mel Spectrogram
+  - Harmonics-to-noise ratio
+  - Tempo estimation
+  - Pitch detection
 
-Key features:
-- Real-world implementation of all monorepo libraries
-- Audio recording, processing, and visualization
-- Speech recognition and audio analysis examples
-- Available on iOS and Android app stores
+### Use Cases
 
-<div align="center">
-  <p>Try it now:</p>
-  <div style="display: flex; justify-content: center; gap: 20px; margin: 10px 0;">
-    <a href="https://apps.apple.com/app/audio-playground/id6739774966">
-      <img src="https://developer.apple.com/app-store/marketing/guidelines/images/badge-download-on-the-app-store.svg" alt="Download on the App Store" height="40" />
-    </a>
-    <a href="https://play.google.com/store/apps/details?id=net.siteed.audioplayground">
-      <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="40" />
-    </a>
-  </div>
-  <p>Or try the web version at <a href="https://deeeed.github.io/expo-audio-stream/playground/">https://deeeed.github.io/expo-audio-stream/playground/</a></p>
-</div>
+- Visualize audio waveforms with detailed metrics
+- Implement speech recognition preprocessing
+- Create music analysis applications
+- Build audio fingerprinting systems
+- Develop voice activity detection
 
-### Sherpa-ONNX Demo
+## API Overview
 
-A focused demo showcasing the integration of the Sherpa-ONNX speech recognition and text-to-speech capabilities.
+The library provides several specialized APIs for different audio processing needs:
 
-Try it at [https://deeeed.github.io/expo-audio-stream/sherpa-onnx-demo/](https://deeeed.github.io/expo-audio-stream/sherpa-onnx-demo/)
+### Recording and Playback
 
-### Essentia Demo
+- **useAudioRecorder**: Hook for recording audio with configurable quality settings
+- **AudioRecorderProvider**: Context provider for sharing recording state across components
+- **useSharedAudioRecorder**: Hook to access shared recording state from any component
 
-A specialized app demonstrating the advanced audio analysis features of the Essentia library integration.
+```typescript
+// Start a new recording with configuration
+const { startRecording, stopRecording, isRecording, recordingUri } = useAudioRecorder({
+  audioQuality: 'high',
+  sampleRate: 44100,
+  numberOfChannels: 2,
+  bitDepth: 16,
+  outputFormat: 'wav',
+});
 
-### Minimal Example
+// Use the prepare API for zero-latency recording
+const { prepareRecording, startRecording, stopRecording } = useSharedAudioRecorder();
 
-A stripped-down implementation showing the bare minimum required to integrate the audio libraries, perfect for developers who want to understand the core concepts without additional complexity.
+// First prepare the recording - this initializes all resources
+await prepareRecording({
+  sampleRate: 44100,
+  channels: 2,
+  encoding: 'pcm_16bit'
+});
 
-## Packages
+// Later when needed, start instantly with no delay
+await startRecording(/* same config as prepare */);
 
-### 1. `@siteed/expo-audio-studio`
+// Share recording state across components
+const AudioApp = () => (
+  <AudioRecorderProvider>
+    <RecordButton />
+    <AudioVisualizer />
+  </AudioRecorderProvider>
+);
+```
 
-`@siteed/expo-audio-studio` (formerly `@siteed/expo-audio-stream`) is a comprehensive library designed to facilitate real-time audio processing and streaming across iOS, Android, and web platforms.
+### Audio Analysis
 
-For more details, please refer to the [README](packages/expo-audio-studio/README.md) of the package.
+- **extractAudioAnalysis**: Extract comprehensive audio features for detailed analysis
+- **extractPreview**: Generate lightweight waveform data for visualization
+- **extractAudioData**: Extract raw PCM data for custom processing
+- **extractRawWavAnalysis**: Analyze WAV files without decoding, preserving original PCM values
 
-### 2. `@siteed/expo-audio-ui`
+```typescript
+// Extract detailed audio analysis with feature extraction
+const analysis = await extractAudioAnalysis({
+  fileUri: 'path/to/recording.wav',
+  features: { rms: true, zcr: true, mfcc: true }
+});
 
-`@siteed/expo-audio-ui` provides UI components to visualize audio data processed by `@siteed/expo-audio-studio`.
+// Generate a lightweight waveform preview
+const preview = await extractPreview({
+  fileUri: 'path/to/recording.wav',
+  pointsPerSecond: 50
+});
 
-For more details, please refer to the [README](packages/expo-audio-ui/README.md) of the package.
+// Extract raw PCM data for custom processing
+const audioData = await extractAudioData({
+  fileUri: 'path/to/recording.wav',
+  includeWavHeader: true
+});
+```
 
-### 3. `@siteed/react-native-essentia`
+#### Choosing the Right Audio Analysis Method
 
-`@siteed/react-native-essentia` provides React Native bindings for the [Essentia audio analysis library](https://essentia.upf.edu/), enabling advanced audio feature extraction on mobile platforms.
+| Method | Purpose | Performance | Use When |
+|--------|---------|-------------|----------|
+| `extractAudioAnalysis` | Comprehensive audio feature extraction | Medium-Heavy | You need detailed audio features like MFCC, spectral features |
+| `extractPreview` | Lightweight waveform visualization | Very Light | You only need amplitude data for visualization |
+| `extractAudioData` | Raw PCM data extraction | Medium | You need the raw audio data for custom processing |
+| `extractRawWavAnalysis` | WAV analysis without decoding | Light | You want to analyze WAV files while preserving original values |
+| `extractMelSpectrogram` | Mel spectrogram generation | Heavy | You need frequency-domain representation for ML or visualization |
 
-Key features:
-- Advanced audio analysis algorithms (MFCC, Key, Spectrum, etc.)
-- Native implementation using C++ for high performance
-- Cross-platform support for iOS and Android
+### Specialized Audio Processing
 
-For more details, please refer to the [README](packages/react-native-essentia/README.md) of the package.
+- **extractMelSpectrogram**: Generate mel spectrogram for audio visualization or ML models
+- **trimAudio**: Trim audio files with precision, supporting multiple segments and formats
 
-### 4. `@siteed/sherpa-onnx.rn`
+```typescript
+// Generate mel spectrogram for audio visualization or ML models
+const melSpectrogram = await extractMelSpectrogram({
+  fileUri: 'path/to/recording.wav',
+  windowSizeMs: 25,
+  hopLengthMs: 10,
+  nMels: 40
+});
 
-`@siteed/sherpa-onnx.rn` is a React Native wrapper for the [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx) library, providing speech-to-text (STT) and text-to-speech (TTS) capabilities. This package is currently under development.
+// Trim audio files with precision
+const trimmedAudio = await trimAudio({
+  fileUri: 'path/to/recording.wav',
+  startTimeMs: 1000,
+  endTimeMs: 5000,
+  outputFormat: { format: 'wav' }
+});
 
-Key features:
-- On-device speech recognition using ONNX models
-- Text-to-speech synthesis
-- Cross-platform support for iOS, Android, and Web
-- Optimized native implementation with web compatibility
+// Trim multiple segments from an audio file
+const compiledAudio = await trimAudio({
+  fileUri: 'path/to/recording.wav',
+  mode: 'keep',
+  ranges: [
+    { startTimeMs: 1000, endTimeMs: 5000 },
+    { startTimeMs: 10000, endTimeMs: 15000 }
+  ]
+});
+```
 
-For more details, check out the [sherpa-onnx demo](https://deeeed.github.io/expo-audio-stream/sherpa-onnx-demo/) or refer to the package source.
+### Utility Functions
 
-## Roadmap
+- **convertPCMToFloat32**: Convert PCM data to Float32Array for processing
+- **getWavFileInfo**: Extract metadata from WAV files
+- **writeWavHeader**: Create WAV headers for raw PCM data
 
-- [x] Automate Changelog generation on monorepo.
-- [x] Implement dual audio stream (one RAW for analysis, one compressed for playback).
-- [x] Intelligent call interruption handling
-- [x] Integrate with react-native-whisper for real-time on device transcriptions. (demo in playground)
-- [x] Migrate audio analysis to c++ native library (implemented in @siteed/react-native-essentia)
-- [x] Cross-platform audio device detection, selection, and fallback handling
-- [x] Add Zero-Latency Audio Recording with `prepareRecording` API 
-- [ ] Setup Beta channel to avoid regressions
-- [ ] Optimize advanced audio feature extraction (spectral features, pitch detection, etc.) for better performance in live recording scenarios
-- [x] Improve native code quality and configure sonarcloud to prevent CI errors.
-- [ ] Integrate sherpa onnx models into expo-audio-studio and playground
-- [ ] Implement example app for custom VAD.
-- [ ] Audio preview waveform component from 'uri'. ( similar to https://github.com/SimformSolutionsPvtLtd/react-native-audio-waveform  )
-- [ ] e2e validation for cross platform features extraction (make sure we get exact same values on all platforms).
-- [ ] Speaker Diarization example app.
+### Low-Level Access
+
+For advanced use cases, the library provides direct access to the native module:
+
+```typescript
+import { ExpoAudioStreamModule } from '@siteed/expo-audio-studio';
+
+// Access platform-specific functionality
+const status = await ExpoAudioStreamModule.status();
+const permissions = await ExpoAudioStreamModule.getPermissionsAsync();
+```
+
+## Documentation
+
+For detailed documentation, please refer to the [Getting Started Guide](https://deeeed.github.io/expo-audio-stream/docs/).
+
+For developers interested in contributing or debugging the library, please see the [Contribution Guide](./CONTRIBUTE.md).
+
+## Companion Resources
+
+### AudioPlayground Application
+
+The repository includes a complete AudioPlayground application that demonstrates advanced usage of the API. This playground serves as both a demonstration and a learning resource:
+
+- Interactive examples of all major API features
+- Real-time audio visualization and analysis
+- Code samples you can directly reference for your own implementation
+
+Try it online at [https://deeeed.github.io/expo-audio-stream/playground](https://deeeed.github.io/expo-audio-stream/playground) or run it locally from the repository.
+
+### UI Components Package
+
+The [@siteed/expo-audio-ui](https://github.com/deeeed/expo-audio-stream/tree/main/packages/expo-audio-ui) package provides ready-to-use UI components for audio applications:
+
+```bash
+# Install the UI components package
+npm install @siteed/expo-audio-ui
+
+# or with yarn
+yarn add @siteed/expo-audio-ui
+```
+
+This package includes:
+- Waveform visualizers
+- Audio recording controls
+- Playback components
+- Spectrogram displays
+- And more!
+
+All components are built with React Native, Reanimated, and Skia for optimal performance across platforms.
 
 ## License
 

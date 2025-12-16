@@ -14,4 +14,3 @@ exports.INFO_CHUNK_ID = 0x494e464f; // "INFO"
 // Default values
 exports.DEFAULT_SAMPLE_RATE = 16000;
 exports.DEFAULT_BIT_DEPTH = 32;
-//# sourceMappingURL=constants.js.map

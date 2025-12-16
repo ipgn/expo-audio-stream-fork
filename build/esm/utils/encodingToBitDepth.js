@@ -10,4 +10,3 @@ export const encodingToBitDepth = ({ encoding, }) => {
             throw new Error(`Unsupported encoding type: ${encoding}`);
     }
 };
-//# sourceMappingURL=encodingToBitDepth.js.map

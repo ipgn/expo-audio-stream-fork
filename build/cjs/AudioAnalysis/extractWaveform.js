@@ -15,4 +15,3 @@ const extractWaveform = async ({ fileUri, numberOfSamples, offset = 0, length, }
     return res;
 };
 exports.extractWaveform = extractWaveform;
-//# sourceMappingURL=extractWaveform.js.map

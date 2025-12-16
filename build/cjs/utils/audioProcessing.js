@@ -11,7 +11,7 @@ async function processAudioBuffer({ arrayBuffer, fileUri, targetSampleRate, targ
     let buffer;
     try {
         // Log initial parameters
-        logger?.debug('Process audio buffer - Initial params:', {
+        logger === null || logger === void 0 ? void 0 : logger.debug('Process audio buffer - Initial params:', {
             hasArrayBuffer: !!arrayBuffer,
             fileUri,
             targetSampleRate,
@@ -37,7 +37,7 @@ async function processAudioBuffer({ arrayBuffer, fileUri, targetSampleRate, targ
         else {
             throw new Error('Either arrayBuffer or fileUri must be provided');
         }
-        logger?.debug('Audio data loaded:', {
+        logger === null || logger === void 0 ? void 0 : logger.debug('Audio data loaded:', {
             byteLength: audioData.byteLength,
             firstBytes: Array.from(new Uint8Array(audioData.slice(0, 16))),
         });
@@ -46,7 +46,7 @@ async function processAudioBuffer({ arrayBuffer, fileUri, targetSampleRate, targ
             audioContext ||
                 new (window.AudioContext || window.webkitAudioContext)();
         buffer = await ctx.decodeAudioData(audioData);
-        logger?.debug('Decoded audio buffer:', {
+        logger === null || logger === void 0 ? void 0 : logger.debug('Decoded audio buffer:', {
             originalChannels: buffer.numberOfChannels,
             originalSampleRate: buffer.sampleRate,
             originalDuration: buffer.duration,
@@ -71,7 +71,7 @@ async function processAudioBuffer({ arrayBuffer, fileUri, targetSampleRate, targ
             : endTimeMs !== undefined && startTimeMs !== undefined
                 ? Math.floor(((endTimeMs - startTimeMs) / 1000) * buffer.sampleRate)
                 : buffer.length - adjustedStartSample;
-        logger?.debug('Sample calculations (adjusted):', {
+        logger === null || logger === void 0 ? void 0 : logger.debug('Sample calculations (adjusted):', {
             originalStartSample: startSample,
             adjustedStartSample,
             samplesNeeded,
@@ -102,7 +102,7 @@ async function processAudioBuffer({ arrayBuffer, fileUri, targetSampleRate, targ
         // Get the final audio data
         const channelData = processedBuffer.getChannelData(0);
         const durationMs = Math.round((samplesNeeded / buffer.sampleRate) * 1000);
-        logger?.debug('Final processed audio:', {
+        logger === null || logger === void 0 ? void 0 : logger.debug('Final processed audio:', {
             outputSamples: channelData.length,
             outputSampleRate: targetSampleRate,
             durationMs,
@@ -117,13 +117,13 @@ async function processAudioBuffer({ arrayBuffer, fileUri, targetSampleRate, targ
         };
     }
     catch (error) {
-        logger?.error('Failed to process audio buffer:', {
+        logger === null || logger === void 0 ? void 0 : logger.error('Failed to process audio buffer:', {
             error,
             position,
             length,
             startTimeMs,
             endTimeMs,
-            bufferLength: buffer?.length,
+            bufferLength: buffer === null || buffer === void 0 ? void 0 : buffer.length,
         });
         throw error;
     }
@@ -133,4 +133,3 @@ async function processAudioBuffer({ arrayBuffer, fileUri, targetSampleRate, targ
         }
     }
 }
-//# sourceMappingURL=audioProcessing.js.map

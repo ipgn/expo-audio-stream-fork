@@ -17,6 +17,7 @@ function useAudioDevices() {
     (0, react_1.useEffect)(() => {
         let isMounted = true;
         const loadDevices = async () => {
+            var _a;
             try {
                 setLoading(true);
                 setError(null);
@@ -30,9 +31,8 @@ function useAudioDevices() {
                     setCurrentDevice(device);
             }
             catch (err) {
-                AudioDeviceManager_1.audioDeviceManager
-                    .getLogger()
-                    ?.error('Failed to load audio devices:', err);
+                (_a = AudioDeviceManager_1.audioDeviceManager
+                    .getLogger()) === null || _a === void 0 ? void 0 : _a.error('Failed to load audio devices:', err);
                 if (isMounted)
                     setError(err instanceof Error
                         ? err
@@ -46,17 +46,16 @@ function useAudioDevices() {
         loadDevices();
         // Set up device change listener
         const removeListener = AudioDeviceManager_1.audioDeviceManager.addDeviceChangeListener((updatedDevices) => {
-            AudioDeviceManager_1.audioDeviceManager
-                .getLogger()
-                ?.debug(`🎛️ useAudioDevices [${instanceId}] received device change. Count: ${updatedDevices.length}`);
+            var _a, _b;
+            (_a = AudioDeviceManager_1.audioDeviceManager
+                .getLogger()) === null || _a === void 0 ? void 0 : _a.debug(`🎛️ useAudioDevices [${instanceId}] received device change. Count: ${updatedDevices.length}`);
             if (isMounted) {
                 setDevices(updatedDevices);
                 // If our current device is no longer available, update it
                 if (currentDevice &&
                     !updatedDevices.some((d) => d.id === currentDevice.id)) {
-                    AudioDeviceManager_1.audioDeviceManager
-                        .getLogger()
-                        ?.debug(`🎛️ useAudioDevices [${instanceId}] Current device ${currentDevice.id} no longer available, updating`);
+                    (_b = AudioDeviceManager_1.audioDeviceManager
+                        .getLogger()) === null || _b === void 0 ? void 0 : _b.debug(`🎛️ useAudioDevices [${instanceId}] Current device ${currentDevice.id} no longer available, updating`);
                     AudioDeviceManager_1.audioDeviceManager
                         .getCurrentDevice()
                         .then((newDevice) => {
@@ -78,6 +77,7 @@ function useAudioDevices() {
      * @returns Promise resolving to a boolean indicating success
      */
     const selectDevice = (0, react_1.useCallback)(async (deviceId) => {
+        var _a;
         try {
             setLoading(true);
             setError(null);
@@ -90,9 +90,8 @@ function useAudioDevices() {
             return success;
         }
         catch (err) {
-            AudioDeviceManager_1.audioDeviceManager
-                .getLogger()
-                ?.error('Failed to select audio device:', err);
+            (_a = AudioDeviceManager_1.audioDeviceManager
+                .getLogger()) === null || _a === void 0 ? void 0 : _a.error('Failed to select audio device:', err);
             setError(err instanceof Error
                 ? err
                 : new Error('Failed to select audio device'));
@@ -107,6 +106,7 @@ function useAudioDevices() {
      * @returns Promise resolving to a boolean indicating success
      */
     const resetToDefaultDevice = (0, react_1.useCallback)(async () => {
+        var _a;
         try {
             setLoading(true);
             setError(null);
@@ -119,9 +119,8 @@ function useAudioDevices() {
             return success;
         }
         catch (err) {
-            AudioDeviceManager_1.audioDeviceManager
-                .getLogger()
-                ?.error('Failed to reset to default audio device:', err);
+            (_a = AudioDeviceManager_1.audioDeviceManager
+                .getLogger()) === null || _a === void 0 ? void 0 : _a.error('Failed to reset to default audio device:', err);
             setError(err instanceof Error
                 ? err
                 : new Error('Failed to reset to default audio device'));
@@ -135,6 +134,7 @@ function useAudioDevices() {
      * Refresh the list of available devices
      */
     const refreshDevices = (0, react_1.useCallback)(async () => {
+        var _a;
         try {
             setLoading(true);
             setError(null);
@@ -146,9 +146,8 @@ function useAudioDevices() {
             return updatedDevices;
         }
         catch (err) {
-            AudioDeviceManager_1.audioDeviceManager
-                .getLogger()
-                ?.error('Failed to refresh audio devices:', err);
+            (_a = AudioDeviceManager_1.audioDeviceManager
+                .getLogger()) === null || _a === void 0 ? void 0 : _a.error('Failed to refresh audio devices:', err);
             setError(err instanceof Error
                 ? err
                 : new Error('Failed to refresh audio devices'));
@@ -176,4 +175,3 @@ function useAudioDevices() {
         initializeDeviceDetection,
     };
 }
-//# sourceMappingURL=useAudioDevices.js.map

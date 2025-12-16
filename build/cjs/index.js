@@ -55,4 +55,3 @@ Object.defineProperty(exports, "audioDeviceManager", { enumerable: true, get: fu
 // Export useAudioDevices hook
 var useAudioDevices_1 = require("./hooks/useAudioDevices");
 Object.defineProperty(exports, "useAudioDevices", { enumerable: true, get: function () { return useAudioDevices_1.useAudioDevices; } });
-//# sourceMappingURL=index.js.map

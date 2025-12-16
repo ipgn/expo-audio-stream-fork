@@ -81,4 +81,3 @@ export const writeWavHeader = ({ buffer, sampleRate, numChannels, bitDepth, isFl
         return headerBuffer;
     }
 };
-//# sourceMappingURL=writeWavHeader.js.map

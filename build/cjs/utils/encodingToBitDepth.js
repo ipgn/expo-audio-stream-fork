@@ -14,4 +14,3 @@ const encodingToBitDepth = ({ encoding, }) => {
     }
 };
 exports.encodingToBitDepth = encodingToBitDepth;
-//# sourceMappingURL=encodingToBitDepth.js.map

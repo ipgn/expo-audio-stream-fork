@@ -17,4 +17,3 @@ export { AudioDeviceManager, audioDeviceManager } from './AudioDeviceManager';
 // Export useAudioDevices hook
 export { useAudioDevices } from './hooks/useAudioDevices';
 export { AudioRecorderProvider, ExpoAudioStreamModule, extractRawWavAnalysis, extractAudioAnalysis, extractPreview, trimAudio, extractAudioData, extractMelSpectrogram, useAudioRecorder, useSharedAudioRecorder, };
-//# sourceMappingURL=index.js.map

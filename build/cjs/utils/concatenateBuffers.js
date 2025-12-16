@@ -22,4 +22,3 @@ const concatenateBuffers = (buffers) => {
     return result.buffer;
 };
 exports.concatenateBuffers = concatenateBuffers;
-//# sourceMappingURL=concatenateBuffers.js.map

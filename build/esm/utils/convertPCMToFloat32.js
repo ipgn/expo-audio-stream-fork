@@ -50,12 +50,12 @@ const convertSampleNative = (array, startIndex, bitDepth) => {
 };
 export const convertPCMToFloat32 = async ({ bitDepth, buffer, skipWavHeader = false, logger, }) => {
     try {
-        logger?.debug(`Converting PCM to Float32: bitDepth: ${bitDepth}, buffer.byteLength: ${buffer.byteLength}`);
+        logger === null || logger === void 0 ? void 0 : logger.debug(`Converting PCM to Float32: bitDepth: ${bitDepth}, buffer.byteLength: ${buffer.byteLength}`);
         let headerOffset = 0;
         if (!skipWavHeader) {
             const wavFileInfo = await getWavFileInfo(buffer);
             headerOffset = wavFileInfo.dataChunkOffset;
-            logger?.debug(`Using WAV header offset: ${headerOffset}`);
+            logger === null || logger === void 0 ? void 0 : logger.debug(`Using WAV header offset: ${headerOffset}`);
         }
         // Convert ArrayBuffer to Uint8Array for more efficient native handling
         const uint8Array = new Uint8Array(buffer);
@@ -100,9 +100,9 @@ export const convertPCMToFloat32 = async ({ bitDepth, buffer, skipWavHeader = fa
                 await new Promise((resolve) => setTimeout(resolve, 0));
             }
         }
-        logger?.debug(`Conversion complete. Length: ${float32Array.length}, Range: [${min}, ${max}]`);
+        logger === null || logger === void 0 ? void 0 : logger.debug(`Conversion complete. Length: ${float32Array.length}, Range: [${min}, ${max}]`);
         // Only log a small sample of values to avoid memory issues
-        if (logger?.debug) {
+        if (logger === null || logger === void 0 ? void 0 : logger.debug) {
             const sampleValues = Array.from(float32Array.slice(0, 5));
             logger.debug('Sample values:', sampleValues);
         }
@@ -113,8 +113,7 @@ export const convertPCMToFloat32 = async ({ bitDepth, buffer, skipWavHeader = fa
         };
     }
     catch (error) {
-        logger?.error(`Error converting PCM to Float32`, error);
+        logger === null || logger === void 0 ? void 0 : logger.error(`Error converting PCM to Float32`, error);
         throw error;
     }
 };
-//# sourceMappingURL=convertPCMToFloat32.js.map

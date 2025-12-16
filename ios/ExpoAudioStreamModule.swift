@@ -263,7 +263,15 @@ public class ExpoAudioStreamModule: Module, AudioStreamManagerDelegate, AudioDev
             Logger.debug("ExpoAudioStreamModule", "status requested: isRecording=\(currentStatus["isRecording"] ?? false), isPaused=\(currentStatus["isPaused"] ?? false)")
             return currentStatus
         }
-        
+
+        /// Gets detailed debug information for troubleshooting audio issues
+        /// This is useful for diagnosing iOS audio capture problems
+        Function("getDebugInfo") {
+            let debugInfo = self.streamManager.getDebugInfo()
+            Logger.info("ExpoAudioStreamModule", "getDebugInfo called: \(debugInfo)")
+            return debugInfo
+        }
+
         /// Prepares audio recording with the specified settings without starting it.
         ///
         /// - Parameters:

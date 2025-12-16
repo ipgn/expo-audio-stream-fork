@@ -26,4 +26,3 @@ function addRecordingInterruptionListener(listener) {
     });
     return subscription;
 }
-//# sourceMappingURL=events.js.map

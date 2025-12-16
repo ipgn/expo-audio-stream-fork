@@ -85,4 +85,3 @@ const writeWavHeader = ({ buffer, sampleRate, numChannels, bitDepth, isFloat = b
     }
 };
 exports.writeWavHeader = writeWavHeader;
-//# sourceMappingURL=writeWavHeader.js.map

@@ -30,6 +30,40 @@ export interface AudioStreamStatus {
     /** Information about audio compression if enabled */
     compression?: CompressionInfo;
 }
+/** Debug information for troubleshooting audio issues (iOS only) */
+export interface AudioDebugInfo {
+    engineIsRunning: boolean;
+    isRecording: boolean;
+    isPaused: boolean;
+    isPrepared: boolean;
+    debugBufferCounter: number;
+    totalDataSize: number;
+    hasDelegate: boolean;
+    hasRecordingSettings: boolean;
+    sessionCategory: string;
+    sessionMode: string;
+    sessionOptions: number;
+    sessionSampleRate: number;
+    sessionInputLatency: number;
+    sessionOutputLatency: number;
+    sessionIsActive: boolean;
+    inputFormatSampleRate: number;
+    inputFormatChannelCount: number;
+    inputFormatCommonFormat: number;
+    inputFormatIsInterleaved: boolean;
+    outputFormatSampleRate: number;
+    outputFormatChannelCount: number;
+    settingsSampleRate?: number;
+    settingsChannels?: number;
+    settingsBitDepth?: number;
+    settingsInterval?: number;
+    configuredCategory?: string;
+    configuredMode?: string;
+    configuredOptions?: number;
+    currentInputPort: string;
+    currentInputName?: string;
+    issue?: string;
+}
 export interface AudioDataEvent {
     /** Audio data as base64 string (native) or Float32Array (web) */
     data: string | Float32Array;

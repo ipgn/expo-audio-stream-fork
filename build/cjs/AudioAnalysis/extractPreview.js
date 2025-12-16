@@ -25,4 +25,3 @@ decodingOptions, logger, }) {
     // Transform the result into AudioPreview format
     return analysis;
 }
-//# sourceMappingURL=extractPreview.js.map

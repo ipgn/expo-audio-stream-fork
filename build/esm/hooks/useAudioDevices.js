@@ -14,6 +14,7 @@ export function useAudioDevices() {
     useEffect(() => {
         let isMounted = true;
         const loadDevices = async () => {
+            var _a;
             try {
                 setLoading(true);
                 setError(null);
@@ -27,9 +28,8 @@ export function useAudioDevices() {
                     setCurrentDevice(device);
             }
             catch (err) {
-                audioDeviceManager
-                    .getLogger()
-                    ?.error('Failed to load audio devices:', err);
+                (_a = audioDeviceManager
+                    .getLogger()) === null || _a === void 0 ? void 0 : _a.error('Failed to load audio devices:', err);
                 if (isMounted)
                     setError(err instanceof Error
                         ? err
@@ -43,17 +43,16 @@ export function useAudioDevices() {
         loadDevices();
         // Set up device change listener
         const removeListener = audioDeviceManager.addDeviceChangeListener((updatedDevices) => {
-            audioDeviceManager
-                .getLogger()
-                ?.debug(`🎛️ useAudioDevices [${instanceId}] received device change. Count: ${updatedDevices.length}`);
+            var _a, _b;
+            (_a = audioDeviceManager
+                .getLogger()) === null || _a === void 0 ? void 0 : _a.debug(`🎛️ useAudioDevices [${instanceId}] received device change. Count: ${updatedDevices.length}`);
             if (isMounted) {
                 setDevices(updatedDevices);
                 // If our current device is no longer available, update it
                 if (currentDevice &&
                     !updatedDevices.some((d) => d.id === currentDevice.id)) {
-                    audioDeviceManager
-                        .getLogger()
-                        ?.debug(`🎛️ useAudioDevices [${instanceId}] Current device ${currentDevice.id} no longer available, updating`);
+                    (_b = audioDeviceManager
+                        .getLogger()) === null || _b === void 0 ? void 0 : _b.debug(`🎛️ useAudioDevices [${instanceId}] Current device ${currentDevice.id} no longer available, updating`);
                     audioDeviceManager
                         .getCurrentDevice()
                         .then((newDevice) => {
@@ -75,6 +74,7 @@ export function useAudioDevices() {
      * @returns Promise resolving to a boolean indicating success
      */
     const selectDevice = useCallback(async (deviceId) => {
+        var _a;
         try {
             setLoading(true);
             setError(null);
@@ -87,9 +87,8 @@ export function useAudioDevices() {
             return success;
         }
         catch (err) {
-            audioDeviceManager
-                .getLogger()
-                ?.error('Failed to select audio device:', err);
+            (_a = audioDeviceManager
+                .getLogger()) === null || _a === void 0 ? void 0 : _a.error('Failed to select audio device:', err);
             setError(err instanceof Error
                 ? err
                 : new Error('Failed to select audio device'));
@@ -104,6 +103,7 @@ export function useAudioDevices() {
      * @returns Promise resolving to a boolean indicating success
      */
     const resetToDefaultDevice = useCallback(async () => {
+        var _a;
         try {
             setLoading(true);
             setError(null);
@@ -116,9 +116,8 @@ export function useAudioDevices() {
             return success;
         }
         catch (err) {
-            audioDeviceManager
-                .getLogger()
-                ?.error('Failed to reset to default audio device:', err);
+            (_a = audioDeviceManager
+                .getLogger()) === null || _a === void 0 ? void 0 : _a.error('Failed to reset to default audio device:', err);
             setError(err instanceof Error
                 ? err
                 : new Error('Failed to reset to default audio device'));
@@ -132,6 +131,7 @@ export function useAudioDevices() {
      * Refresh the list of available devices
      */
     const refreshDevices = useCallback(async () => {
+        var _a;
         try {
             setLoading(true);
             setError(null);
@@ -143,9 +143,8 @@ export function useAudioDevices() {
             return updatedDevices;
         }
         catch (err) {
-            audioDeviceManager
-                .getLogger()
-                ?.error('Failed to refresh audio devices:', err);
+            (_a = audioDeviceManager
+                .getLogger()) === null || _a === void 0 ? void 0 : _a.error('Failed to refresh audio devices:', err);
             setError(err instanceof Error
                 ? err
                 : new Error('Failed to refresh audio devices'));
@@ -173,4 +172,3 @@ export function useAudioDevices() {
         initializeDeviceDetection,
     };
 }
-//# sourceMappingURL=useAudioDevices.js.map

@@ -6,31 +6,6 @@ const expo_modules_core_1 = require("expo-modules-core");
 const WebRecorder_web_1 = require("./WebRecorder.web");
 const encodingToBitDepth_1 = require("./utils/encodingToBitDepth");
 class ExpoAudioStreamWeb extends expo_modules_core_1.LegacyEventEmitter {
-    customRecorder;
-    audioChunks;
-    isRecording;
-    isPaused;
-    recordingStartTime;
-    pausedTime;
-    currentDurationMs;
-    currentSize;
-    currentInterval;
-    currentIntervalAnalysis;
-    lastEmittedSize;
-    lastEmittedTime;
-    lastEmittedCompressionSize;
-    lastEmittedAnalysisTime;
-    streamUuid;
-    extension = 'wav'; // Default extension is 'wav'
-    recordingConfig;
-    bitDepth; // Bit depth of the audio
-    audioWorkletUrl;
-    featuresExtratorUrl;
-    logger;
-    latestPosition = 0;
-    totalCompressedSize = 0;
-    maxBufferSize;
-    eventCallback;
     constructor({ audioWorkletUrl, featuresExtratorUrl, logger, maxBufferSize = 100, // Default to storing last 100 chunks (1 chunk = 0.5 seconds)
      }) {
         const mockNativeModule = {
@@ -38,6 +13,9 @@ class ExpoAudioStreamWeb extends expo_modules_core_1.LegacyEventEmitter {
             removeListeners: () => { },
         };
         super(mockNativeModule); // Pass the mock native module to the parent class
+        this.extension = 'wav'; // Default extension is 'wav'
+        this.latestPosition = 0;
+        this.totalCompressedSize = 0;
         this.logger = logger;
         this.customRecorder = null;
         this.audioChunks = [];
@@ -62,37 +40,32 @@ class ExpoAudioStreamWeb extends expo_modules_core_1.LegacyEventEmitter {
     }
     // Utility to handle user media stream
     async getMediaStream() {
+        var _a, _b, _c, _d, _e, _f, _g, _h;
         try {
-            this.logger?.debug('Requesting user media (microphone)...');
+            (_a = this.logger) === null || _a === void 0 ? void 0 : _a.debug('Requesting user media (microphone)...');
             // First check if the browser supports the necessary audio APIs
-            if (!navigator?.mediaDevices?.getUserMedia) {
-                this.logger?.error('Browser does not support mediaDevices.getUserMedia');
+            if (!((_b = navigator === null || navigator === void 0 ? void 0 : navigator.mediaDevices) === null || _b === void 0 ? void 0 : _b.getUserMedia)) {
+                (_c = this.logger) === null || _c === void 0 ? void 0 : _c.error('Browser does not support mediaDevices.getUserMedia');
                 throw new Error('Browser does not support audio recording');
             }
             // Get media with detailed audio constraints for better diagnostics
             const constraints = {
-                audio: {
-                    echoCancellation: true,
-                    noiseSuppression: true,
-                    autoGainControl: true,
-                    // Add deviceId constraint if specified
-                    ...(this.recordingConfig?.deviceId
-                        ? {
-                            deviceId: {
-                                exact: this.recordingConfig.deviceId,
-                            },
-                        }
-                        : {}),
-                },
+                audio: Object.assign({ echoCancellation: true, noiseSuppression: true, autoGainControl: true }, (((_d = this.recordingConfig) === null || _d === void 0 ? void 0 : _d.deviceId)
+                    ? {
+                        deviceId: {
+                            exact: this.recordingConfig.deviceId,
+                        },
+                    }
+                    : {})),
             };
-            this.logger?.debug('Media constraints:', constraints);
+            (_e = this.logger) === null || _e === void 0 ? void 0 : _e.debug('Media constraints:', constraints);
             const stream = await navigator.mediaDevices.getUserMedia(constraints);
             // Get detailed info about the audio track for debugging
             const audioTracks = stream.getAudioTracks();
             if (audioTracks.length > 0) {
                 const track = audioTracks[0];
                 const settings = track.getSettings();
-                this.logger?.debug('Audio track obtained:', {
+                (_f = this.logger) === null || _f === void 0 ? void 0 : _f.debug('Audio track obtained:', {
                     label: track.label,
                     id: track.id,
                     enabled: track.enabled,
@@ -102,19 +75,20 @@ class ExpoAudioStreamWeb extends expo_modules_core_1.LegacyEventEmitter {
                 });
             }
             else {
-                this.logger?.warn('Stream has no audio tracks!');
+                (_g = this.logger) === null || _g === void 0 ? void 0 : _g.warn('Stream has no audio tracks!');
             }
             return stream;
         }
         catch (error) {
-            this.logger?.error('Failed to get media stream:', error);
+            (_h = this.logger) === null || _h === void 0 ? void 0 : _h.error('Failed to get media stream:', error);
             throw error;
         }
     }
     // Prepare recording with options
     async prepareRecording(recordingConfig = {}) {
+        var _a, _b, _c, _d;
         if (this.isRecording) {
-            this.logger?.warn('Cannot prepare: Recording is already in progress');
+            (_a = this.logger) === null || _a === void 0 ? void 0 : _a.warn('Cannot prepare: Recording is already in progress');
             return false;
         }
         try {
@@ -124,7 +98,7 @@ class ExpoAudioStreamWeb extends expo_modules_core_1.LegacyEventEmitter {
                 stream.getTracks().forEach((track) => track.stop());
             });
             this.bitDepth = (0, encodingToBitDepth_1.encodingToBitDepth)({
-                encoding: recordingConfig.encoding ?? 'pcm_32bit',
+                encoding: (_b = recordingConfig.encoding) !== null && _b !== void 0 ? _b : 'pcm_32bit',
             });
             // Store recording configuration for later use
             this.recordingConfig = recordingConfig;
@@ -136,16 +110,17 @@ class ExpoAudioStreamWeb extends expo_modules_core_1.LegacyEventEmitter {
             else {
                 this.streamUuid = Date.now().toString();
             }
-            this.logger?.debug('Recording preparation completed successfully');
+            (_c = this.logger) === null || _c === void 0 ? void 0 : _c.debug('Recording preparation completed successfully');
             return true;
         }
         catch (error) {
-            this.logger?.error('Error preparing recording:', error);
+            (_d = this.logger) === null || _d === void 0 ? void 0 : _d.error('Error preparing recording:', error);
             return false;
         }
     }
     // Start recording with options
     async startRecording(recordingConfig = {}) {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
         if (this.isRecording) {
             throw new Error('Recording is already in progress');
         }
@@ -157,7 +132,7 @@ class ExpoAudioStreamWeb extends expo_modules_core_1.LegacyEventEmitter {
             await this.prepareRecording(recordingConfig);
         }
         else {
-            this.logger?.debug('Using previously prepared recording configuration');
+            (_a = this.logger) === null || _a === void 0 ? void 0 : _a.debug('Using previously prepared recording configuration');
         }
         // Save recording config for reference
         this.recordingConfig = recordingConfig;
@@ -185,8 +160,8 @@ class ExpoAudioStreamWeb extends expo_modules_core_1.LegacyEventEmitter {
         this.lastEmittedSize = 0;
         this.lastEmittedTime = 0;
         this.lastEmittedCompressionSize = 0;
-        this.currentInterval = recordingConfig.interval ?? 1000;
-        this.currentIntervalAnalysis = recordingConfig.intervalAnalysis ?? 500;
+        this.currentInterval = (_b = recordingConfig.interval) !== null && _b !== void 0 ? _b : 1000;
+        this.currentIntervalAnalysis = (_c = recordingConfig.intervalAnalysis) !== null && _c !== void 0 ? _c : 500;
         this.lastEmittedAnalysisTime = Date.now();
         // Use custom filename if provided, otherwise fallback to timestamp
         if (recordingConfig.filename) {
@@ -201,18 +176,10 @@ class ExpoAudioStreamWeb extends expo_modules_core_1.LegacyEventEmitter {
             fileUri,
             mimeType: `audio/${this.extension}`,
             bitDepth: this.bitDepth,
-            channels: recordingConfig.channels ?? 1,
-            sampleRate: recordingConfig.sampleRate ?? 44100,
-            compression: recordingConfig.output?.compressed?.enabled
-                ? {
-                    ...recordingConfig.output.compressed,
-                    bitrate: recordingConfig.output.compressed.bitrate ?? 128000,
-                    size: 0,
-                    mimeType: 'audio/webm',
-                    format: recordingConfig.output.compressed.format ?? 'opus',
-                    compressedFileUri: '',
-                }
-                : undefined,
+            channels: (_d = recordingConfig.channels) !== null && _d !== void 0 ? _d : 1,
+            sampleRate: (_e = recordingConfig.sampleRate) !== null && _e !== void 0 ? _e : 44100,
+            compression: ((_g = (_f = recordingConfig.output) === null || _f === void 0 ? void 0 : _f.compressed) === null || _g === void 0 ? void 0 : _g.enabled)
+                ? Object.assign(Object.assign({}, recordingConfig.output.compressed), { bitrate: (_h = recordingConfig.output.compressed.bitrate) !== null && _h !== void 0 ? _h : 128000, size: 0, mimeType: 'audio/webm', format: (_j = recordingConfig.output.compressed.format) !== null && _j !== void 0 ? _j : 'opus', compressedFileUri: '' }) : undefined,
         };
         return streamConfig;
     }
@@ -220,7 +187,8 @@ class ExpoAudioStreamWeb extends expo_modules_core_1.LegacyEventEmitter {
      * Centralized handler for recording interruptions
      */
     handleRecordingInterruption(event) {
-        this.logger?.debug(`Received recording interruption: ${event.reason}`);
+        var _a, _b, _c, _d;
+        (_a = this.logger) === null || _a === void 0 ? void 0 : _a.debug(`Received recording interruption: ${event.reason}`);
         // Update local state if the interruption should pause recording
         if (event.isPaused) {
             this.isPaused = true;
@@ -228,13 +196,14 @@ class ExpoAudioStreamWeb extends expo_modules_core_1.LegacyEventEmitter {
             if (event.reason === 'deviceDisconnected') {
                 this.pausedTime = Date.now();
                 // Check if we should try fallback to another device
-                if (this.recordingConfig?.deviceDisconnectionBehavior ===
+                if (((_b = this.recordingConfig) === null || _b === void 0 ? void 0 : _b.deviceDisconnectionBehavior) ===
                     'fallback') {
-                    this.logger?.debug('Device disconnected with fallback behavior - attempting to switch to default device');
+                    (_c = this.logger) === null || _c === void 0 ? void 0 : _c.debug('Device disconnected with fallback behavior - attempting to switch to default device');
                     // Try to restart with default device
                     this.handleDeviceFallback().catch((error) => {
+                        var _a;
                         // If fallback fails, emit warning
-                        this.logger?.error('Device fallback failed:', error);
+                        (_a = this.logger) === null || _a === void 0 ? void 0 : _a.error('Device fallback failed:', error);
                         this.emit('onRecordingInterrupted', {
                             reason: 'deviceSwitchFailed',
                             isPaused: true,
@@ -245,7 +214,7 @@ class ExpoAudioStreamWeb extends expo_modules_core_1.LegacyEventEmitter {
                 }
                 else {
                     // Just warn about disconnection if fallback not enabled
-                    this.logger?.warn('Device disconnected - recording paused automatically');
+                    (_d = this.logger) === null || _d === void 0 ? void 0 : _d.warn('Device disconnected - recording paused automatically');
                     this.emit('onRecordingInterrupted', event);
                 }
             }
@@ -263,6 +232,7 @@ class ExpoAudioStreamWeb extends expo_modules_core_1.LegacyEventEmitter {
      * Handler for audio events from the WebRecorder
      */
     customRecorderEventCallback({ data, position, compression, }) {
+        var _a;
         // Keep only the latest chunks based on maxBufferSize
         this.audioChunks.push(new Float32Array(data));
         if (this.audioChunks.length > this.maxBufferSize) {
@@ -272,7 +242,7 @@ class ExpoAudioStreamWeb extends expo_modules_core_1.LegacyEventEmitter {
         this.emitAudioEvent({ data, position, compression });
         this.lastEmittedTime = Date.now();
         this.lastEmittedSize = this.currentSize;
-        this.lastEmittedCompressionSize = compression?.size ?? 0;
+        this.lastEmittedCompressionSize = (_a = compression === null || compression === void 0 ? void 0 : compression.size) !== null && _a !== void 0 ? _a : 0;
     }
     /**
      * Handler for audio analysis events from the WebRecorder
@@ -288,19 +258,20 @@ class ExpoAudioStreamWeb extends expo_modules_core_1.LegacyEventEmitter {
         return this.currentDurationMs;
     }
     emitAudioEvent({ data, position, compression }) {
+        var _a, _b, _c, _d, _e;
         const fileUri = `${this.streamUuid}.${this.extension}`;
-        if (compression?.size) {
+        if (compression === null || compression === void 0 ? void 0 : compression.size) {
             this.lastEmittedCompressionSize = compression.size;
             this.totalCompressedSize = compression.totalSize;
         }
         // Update latest position for tracking
         this.latestPosition = position;
         // Calculate duration of this chunk in ms
-        const sampleRate = this.recordingConfig?.sampleRate || 44100;
+        const sampleRate = ((_a = this.recordingConfig) === null || _a === void 0 ? void 0 : _a.sampleRate) || 44100;
         const chunkDurationMs = (data.length / sampleRate) * 1000;
         // Handle duration calculation
-        if (this.customRecorder?.isFirstChunkAfterSwitch) {
-            this.logger?.debug(`Processing first chunk after device switch, duration preserved at ${this.currentDurationMs}ms`);
+        if ((_b = this.customRecorder) === null || _b === void 0 ? void 0 : _b.isFirstChunkAfterSwitch) {
+            (_c = this.logger) === null || _c === void 0 ? void 0 : _c.debug(`Processing first chunk after device switch, duration preserved at ${this.currentDurationMs}ms`);
             this.customRecorder.isFirstChunkAfterSwitch = false;
         }
         else {
@@ -314,12 +285,12 @@ class ExpoAudioStreamWeb extends expo_modules_core_1.LegacyEventEmitter {
             position,
             totalSize: this.currentSize,
             buffer: data,
-            streamUuid: this.streamUuid ?? '',
+            streamUuid: (_d = this.streamUuid) !== null && _d !== void 0 ? _d : '',
             compression: compression
                 ? {
-                    data: compression?.data,
+                    data: compression === null || compression === void 0 ? void 0 : compression.data,
                     totalSize: this.totalCompressedSize,
-                    eventDataSize: compression?.size ?? 0,
+                    eventDataSize: (_e = compression === null || compression === void 0 ? void 0 : compression.size) !== null && _e !== void 0 ? _e : 0,
                     position,
                 }
                 : undefined,
@@ -328,10 +299,11 @@ class ExpoAudioStreamWeb extends expo_modules_core_1.LegacyEventEmitter {
     }
     // Stop recording
     async stopRecording() {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z;
         if (!this.customRecorder) {
             throw new Error('Recorder is not initialized');
         }
-        this.logger?.debug('Starting stop process');
+        (_a = this.logger) === null || _a === void 0 ? void 0 : _a.debug('Starting stop process');
         try {
             const { compressedBlob, uncompressedBlob } = await this.customRecorder.stop();
             this.isRecording = false;
@@ -340,8 +312,8 @@ class ExpoAudioStreamWeb extends expo_modules_core_1.LegacyEventEmitter {
             let fileUri = `${this.streamUuid}.${this.extension}`;
             let mimeType = `audio/${this.extension}`;
             // Handle both compressed and uncompressed blobs according to new output configuration
-            const primaryEnabled = this.recordingConfig?.output?.primary?.enabled ?? true;
-            const compressedEnabled = this.recordingConfig?.output?.compressed?.enabled ?? false;
+            const primaryEnabled = (_e = (_d = (_c = (_b = this.recordingConfig) === null || _b === void 0 ? void 0 : _b.output) === null || _c === void 0 ? void 0 : _c.primary) === null || _d === void 0 ? void 0 : _d.enabled) !== null && _e !== void 0 ? _e : true;
+            const compressedEnabled = (_j = (_h = (_g = (_f = this.recordingConfig) === null || _f === void 0 ? void 0 : _f.output) === null || _g === void 0 ? void 0 : _g.compressed) === null || _h === void 0 ? void 0 : _h.enabled) !== null && _j !== void 0 ? _j : false;
             // Process compressed blob if available and enabled
             if (compressedBlob && compressedEnabled) {
                 const compressedUri = URL.createObjectURL(compressedBlob);
@@ -349,16 +321,14 @@ class ExpoAudioStreamWeb extends expo_modules_core_1.LegacyEventEmitter {
                     compressedFileUri: compressedUri,
                     size: compressedBlob.size,
                     mimeType: 'audio/webm',
-                    format: this.recordingConfig?.output?.compressed?.format ??
-                        'opus',
-                    bitrate: this.recordingConfig?.output?.compressed?.bitrate ??
-                        128000,
+                    format: (_o = (_m = (_l = (_k = this.recordingConfig) === null || _k === void 0 ? void 0 : _k.output) === null || _l === void 0 ? void 0 : _l.compressed) === null || _m === void 0 ? void 0 : _m.format) !== null && _o !== void 0 ? _o : 'opus',
+                    bitrate: (_s = (_r = (_q = (_p = this.recordingConfig) === null || _p === void 0 ? void 0 : _p.output) === null || _q === void 0 ? void 0 : _q.compressed) === null || _r === void 0 ? void 0 : _r.bitrate) !== null && _s !== void 0 ? _s : 128000,
                 };
                 // Store compression info
                 compression = compressedInfo;
                 // If primary is disabled, use compressed as main file
                 if (!primaryEnabled) {
-                    this.logger?.debug('Using compressed audio as primary output (primary disabled)');
+                    (_t = this.logger) === null || _t === void 0 ? void 0 : _t.debug('Using compressed audio as primary output (primary disabled)');
                     fileUri = compressedUri;
                     mimeType = 'audio/webm';
                 }
@@ -371,7 +341,7 @@ class ExpoAudioStreamWeb extends expo_modules_core_1.LegacyEventEmitter {
             }
             else if (!primaryEnabled && !compressedEnabled) {
                 // No outputs enabled - streaming only mode
-                this.logger?.debug('No outputs enabled - streaming only mode');
+                (_u = this.logger) === null || _u === void 0 ? void 0 : _u.debug('No outputs enabled - streaming only mode');
                 fileUri = '';
                 mimeType = 'audio/wav';
             }
@@ -384,8 +354,8 @@ class ExpoAudioStreamWeb extends expo_modules_core_1.LegacyEventEmitter {
                 filename,
                 bitDepth: this.bitDepth,
                 createdAt: this.recordingStartTime,
-                channels: this.recordingConfig?.channels ?? 1,
-                sampleRate: this.recordingConfig?.sampleRate ?? 44100,
+                channels: (_w = (_v = this.recordingConfig) === null || _v === void 0 ? void 0 : _v.channels) !== null && _w !== void 0 ? _w : 1,
+                sampleRate: (_y = (_x = this.recordingConfig) === null || _x === void 0 ? void 0 : _x.sampleRate) !== null && _y !== void 0 ? _y : 44100,
                 durationMs: this.currentDurationMs,
                 size: primaryEnabled ? this.currentSize : 0,
                 mimeType,
@@ -403,17 +373,18 @@ class ExpoAudioStreamWeb extends expo_modules_core_1.LegacyEventEmitter {
             return result;
         }
         catch (error) {
-            this.logger?.error('Error stopping recording:', error);
+            (_z = this.logger) === null || _z === void 0 ? void 0 : _z.error('Error stopping recording:', error);
             throw error;
         }
     }
     // Pause recording
     async pauseRecording() {
+        var _a, _b;
         if (!this.isRecording) {
             throw new Error('Recording is not active');
         }
         if (this.isPaused) {
-            this.logger?.debug('Recording already paused, skipping');
+            (_a = this.logger) === null || _a === void 0 ? void 0 : _a.debug('Recording already paused, skipping');
             return;
         }
         try {
@@ -424,7 +395,7 @@ class ExpoAudioStreamWeb extends expo_modules_core_1.LegacyEventEmitter {
             this.pausedTime = Date.now();
         }
         catch (error) {
-            this.logger?.error('Error in pauseRecording', error);
+            (_b = this.logger) === null || _b === void 0 ? void 0 : _b.error('Error in pauseRecording', error);
             // Even if the pause operation failed, make sure our state is consistent
             this.isPaused = true;
             this.pausedTime = Date.now();
@@ -432,18 +403,19 @@ class ExpoAudioStreamWeb extends expo_modules_core_1.LegacyEventEmitter {
     }
     // Resume recording
     async resumeRecording() {
+        var _a, _b, _c, _d, _e;
         if (!this.isPaused) {
             throw new Error('Recording is not paused');
         }
-        this.logger?.debug('Resuming recording', {
-            deviceDisconnectionBehavior: this.recordingConfig?.deviceDisconnectionBehavior,
-            isDeviceDisconnected: this.customRecorder?.isDeviceDisconnected,
+        (_a = this.logger) === null || _a === void 0 ? void 0 : _a.debug('Resuming recording', {
+            deviceDisconnectionBehavior: (_b = this.recordingConfig) === null || _b === void 0 ? void 0 : _b.deviceDisconnectionBehavior,
+            isDeviceDisconnected: (_c = this.customRecorder) === null || _c === void 0 ? void 0 : _c.isDeviceDisconnected,
         });
         try {
             // If we have no recorder, or if the device is disconnected, always attempt fallback
             if (!this.customRecorder ||
                 this.customRecorder.isDeviceDisconnected) {
-                this.logger?.debug('No recorder exists or device disconnected - attempting fallback on resume');
+                (_d = this.logger) === null || _d === void 0 ? void 0 : _d.debug('No recorder exists or device disconnected - attempting fallback on resume');
                 await this.handleDeviceFallback();
                 // handleDeviceFallback will manage resuming if successful, or emit error if failed.
                 return;
@@ -462,7 +434,7 @@ class ExpoAudioStreamWeb extends expo_modules_core_1.LegacyEventEmitter {
             });
         }
         catch (error) {
-            this.logger?.error('Resume failed:', error);
+            (_e = this.logger) === null || _e === void 0 ? void 0 : _e.error('Resume failed:', error);
             // Fallback to emitting a general failure if resume fails unexpectedly
             this.emit('onRecordingInterrupted', {
                 reason: 'resumeFailed', // Use a more specific reason
@@ -474,6 +446,7 @@ class ExpoAudioStreamWeb extends expo_modules_core_1.LegacyEventEmitter {
     }
     // Get current status
     status() {
+        var _a, _b, _c, _d, _e;
         const durationMs = this.getRecordingDuration();
         const status = {
             isRecording: this.isRecording,
@@ -483,14 +456,12 @@ class ExpoAudioStreamWeb extends expo_modules_core_1.LegacyEventEmitter {
             interval: this.currentInterval,
             intervalAnalysis: this.currentIntervalAnalysis,
             mimeType: `audio/${this.extension}`,
-            compression: this.recordingConfig?.output?.compressed?.enabled
+            compression: ((_c = (_b = (_a = this.recordingConfig) === null || _a === void 0 ? void 0 : _a.output) === null || _b === void 0 ? void 0 : _b.compressed) === null || _c === void 0 ? void 0 : _c.enabled)
                 ? {
                     size: this.totalCompressedSize,
                     mimeType: 'audio/webm',
-                    format: this.recordingConfig.output.compressed.format ??
-                        'opus',
-                    bitrate: this.recordingConfig.output.compressed.bitrate ??
-                        128000,
+                    format: (_d = this.recordingConfig.output.compressed.format) !== null && _d !== void 0 ? _d : 'opus',
+                    bitrate: (_e = this.recordingConfig.output.compressed.bitrate) !== null && _e !== void 0 ? _e : 128000,
                     compressedFileUri: `${this.streamUuid}.webm`,
                 }
                 : undefined,
@@ -501,7 +472,8 @@ class ExpoAudioStreamWeb extends expo_modules_core_1.LegacyEventEmitter {
      * Handles device fallback when the current device is disconnected
      */
     async handleDeviceFallback() {
-        this.logger?.debug('Starting device fallback procedure');
+        var _a, _b, _c, _d, _e;
+        (_a = this.logger) === null || _a === void 0 ? void 0 : _a.debug('Starting device fallback procedure');
         if (!this.isRecording) {
             return false;
         }
@@ -516,7 +488,7 @@ class ExpoAudioStreamWeb extends expo_modules_core_1.LegacyEventEmitter {
                     compressedChunks = this.customRecorder.getCompressedChunks();
                 }
                 catch (err) {
-                    this.logger?.warn('Failed to get compressed chunks:', err);
+                    (_b = this.logger) === null || _b === void 0 ? void 0 : _b.warn('Failed to get compressed chunks:', err);
                 }
             }
             // Save the current counter value for continuity
@@ -531,7 +503,7 @@ class ExpoAudioStreamWeb extends expo_modules_core_1.LegacyEventEmitter {
                     this.customRecorder.cleanup();
                 }
                 catch (cleanupError) {
-                    this.logger?.warn('Error during cleanup:', cleanupError);
+                    (_c = this.logger) === null || _c === void 0 ? void 0 : _c.warn('Error during cleanup:', cleanupError);
                 }
             }
             // Keep recording state true but mark as paused
@@ -607,7 +579,7 @@ class ExpoAudioStreamWeb extends expo_modules_core_1.LegacyEventEmitter {
                 return true;
             }
             catch (error) {
-                this.logger?.error('Failed to start recording with fallback device', error);
+                (_d = this.logger) === null || _d === void 0 ? void 0 : _d.error('Failed to start recording with fallback device', error);
                 this.isPaused = true;
                 this.emit('onRecordingInterrupted', {
                     reason: 'deviceSwitchFailed',
@@ -619,7 +591,7 @@ class ExpoAudioStreamWeb extends expo_modules_core_1.LegacyEventEmitter {
             }
         }
         catch (error) {
-            this.logger?.error('Failed to use fallback device', error);
+            (_e = this.logger) === null || _e === void 0 ? void 0 : _e.error('Failed to use fallback device', error);
             this.isPaused = true;
             this.emit('onRecordingInterrupted', {
                 reason: 'deviceSwitchFailed',
@@ -634,6 +606,7 @@ class ExpoAudioStreamWeb extends expo_modules_core_1.LegacyEventEmitter {
      * Attempts to get a fallback audio device
      */
     async getFallbackDevice() {
+        var _a, _b;
         try {
             // Get list of available audio input devices
             const devices = await navigator.mediaDevices.enumerateDevices();
@@ -663,14 +636,14 @@ class ExpoAudioStreamWeb extends expo_modules_core_1.LegacyEventEmitter {
                     }
                 }
                 catch (err) {
-                    this.logger?.warn('Error determining current device, using default', err);
+                    (_a = this.logger) === null || _a === void 0 ? void 0 : _a.warn('Error determining current device, using default', err);
                 }
             }
             // Return the first available device (default device)
             return audioInputDevices[0];
         }
         catch (error) {
-            this.logger?.error('Error finding fallback device:', error);
+            (_b = this.logger) === null || _b === void 0 ? void 0 : _b.error('Error finding fallback device:', error);
             return null;
         }
     }
@@ -678,6 +651,7 @@ class ExpoAudioStreamWeb extends expo_modules_core_1.LegacyEventEmitter {
      * Gets user media with specific device ID
      */
     async requestPermissionsAndGetUserMedia(deviceId) {
+        var _a;
         try {
             // Request the specific device
             return await navigator.mediaDevices.getUserMedia({
@@ -687,22 +661,22 @@ class ExpoAudioStreamWeb extends expo_modules_core_1.LegacyEventEmitter {
             });
         }
         catch (error) {
-            this.logger?.error(`Failed to get media for device ${deviceId}`, error);
+            (_a = this.logger) === null || _a === void 0 ? void 0 : _a.error(`Failed to get media for device ${deviceId}`, error);
             // Try with default constraints as fallback
             return await navigator.mediaDevices.getUserMedia({ audio: true });
         }
     }
     init(options) {
+        var _a;
         try {
-            this.logger = options?.logger;
-            this.eventCallback = options?.eventCallback;
+            this.logger = options === null || options === void 0 ? void 0 : options.logger;
+            this.eventCallback = options === null || options === void 0 ? void 0 : options.eventCallback;
             return Promise.resolve();
         }
         catch (error) {
-            this.logger?.error('Error initializing ExpoAudioStream', error);
+            (_a = this.logger) === null || _a === void 0 ? void 0 : _a.error('Error initializing ExpoAudioStream', error);
             return Promise.reject(error);
         }
     }
 }
 exports.ExpoAudioStreamWeb = ExpoAudioStreamWeb;
-//# sourceMappingURL=ExpoAudioStream.web.js.map

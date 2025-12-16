@@ -178,4 +178,3 @@ class RecorderProcessor extends AudioWorkletProcessor {
 
 registerProcessor('recorder-processor', RecorderProcessor)
 `;
-//# sourceMappingURL=inlineAudioWebWorker.web.js.map

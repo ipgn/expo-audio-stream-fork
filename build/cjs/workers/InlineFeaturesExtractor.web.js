@@ -856,4 +856,3 @@ self.onmessage = function (event) {
     }
 }
 `;
-//# sourceMappingURL=InlineFeaturesExtractor.web.js.map

@@ -236,10 +236,6 @@ const sections = {
     0x485: { name: 'TagBinary', type: 'Binary' },
 };
 class WebmBase {
-    source;
-    data;
-    name;
-    type;
     constructor(name = 'Unknown', type = 'Unknown') {
         this.name = name;
         this.type = type;
@@ -316,10 +312,10 @@ class WebmFloat extends WebmBase {
     }
 }
 class WebmContainer extends WebmBase {
-    offset = 0;
-    data = [];
     constructor(name, type) {
         super(name, type || 'Container');
+        this.offset = 0;
+        this.data = [];
     }
     readByte() {
         return this.source[this.offset++];
@@ -495,4 +491,3 @@ export const webmFixDuration = (blob, duration, type = 'video/webm') => {
         }
     });
 };
-//# sourceMappingURL=BlobFix.js.map

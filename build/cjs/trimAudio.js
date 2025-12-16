@@ -21,11 +21,12 @@ const emitter = new expo_modules_core_1.LegacyEventEmitter(ExpoAudioStreamModule
  * @returns Promise resolving to the trimmed audio file information, including processing time
  */
 async function trimAudio(options, progressCallback) {
+    var _a;
     // Validation
     if (!options.fileUri) {
         throw new Error('fileUri is required');
     }
-    const mode = options.mode ?? 'single';
+    const mode = (_a = options.mode) !== null && _a !== void 0 ? _a : 'single';
     if (mode === 'single') {
         if (options.startTimeMs === undefined &&
             options.endTimeMs === undefined) {
@@ -71,4 +72,3 @@ async function trimAudioSimple(options) {
     const result = await trimAudio(options);
     return result.uri;
 }
-//# sourceMappingURL=trimAudio.js.map

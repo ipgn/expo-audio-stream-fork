@@ -27,7 +27,7 @@ if (Platform.OS === 'web') {
                 granted: true,
             };
         }
-        catch {
+        catch (_a) {
             return {
                 status: 'denied',
                 expires: 'never',
@@ -37,15 +37,16 @@ if (Platform.OS === 'web') {
         }
     };
     ExpoAudioStreamModule.getPermissionsAsync = async () => {
+        var _a;
         let maybeStatus = null;
-        if (navigator?.permissions?.query) {
+        if ((_a = navigator === null || navigator === void 0 ? void 0 : navigator.permissions) === null || _a === void 0 ? void 0 : _a.query) {
             try {
                 const { state } = await navigator.permissions.query({
                     name: 'microphone',
                 });
                 maybeStatus = state;
             }
-            catch {
+            catch (_b) {
                 maybeStatus = null;
             }
         }
@@ -69,9 +70,10 @@ if (Platform.OS === 'web') {
         }
     };
     ExpoAudioStreamModule.extractAudioData = async (options) => {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
         try {
             const { fileUri, position, length, startTimeMs, endTimeMs, decodingOptions, includeNormalizedData, includeBase64Data, includeWavHeader = false, logger, } = options;
-            logger?.debug('EXTRACT AUDIO - Step 1: Initial request', {
+            logger === null || logger === void 0 ? void 0 : logger.debug('EXTRACT AUDIO - Step 1: Initial request', {
                 fileUri,
                 extractionParams: {
                     position,
@@ -80,10 +82,10 @@ if (Platform.OS === 'web') {
                     endTimeMs,
                 },
                 decodingOptions: {
-                    targetSampleRate: decodingOptions?.targetSampleRate ?? 16000,
-                    targetChannels: decodingOptions?.targetChannels ?? 1,
-                    targetBitDepth: decodingOptions?.targetBitDepth ?? 16,
-                    normalizeAudio: decodingOptions?.normalizeAudio ?? false,
+                    targetSampleRate: (_a = decodingOptions === null || decodingOptions === void 0 ? void 0 : decodingOptions.targetSampleRate) !== null && _a !== void 0 ? _a : 16000,
+                    targetChannels: (_b = decodingOptions === null || decodingOptions === void 0 ? void 0 : decodingOptions.targetChannels) !== null && _b !== void 0 ? _b : 1,
+                    targetBitDepth: (_c = decodingOptions === null || decodingOptions === void 0 ? void 0 : decodingOptions.targetBitDepth) !== null && _c !== void 0 ? _c : 16,
+                    normalizeAudio: (_d = decodingOptions === null || decodingOptions === void 0 ? void 0 : decodingOptions.normalizeAudio) !== null && _d !== void 0 ? _d : false,
                 },
                 outputOptions: {
                     includeNormalizedData,
@@ -94,16 +96,16 @@ if (Platform.OS === 'web') {
             // Process the audio using shared helper function
             const processedBuffer = await processAudioBuffer({
                 fileUri,
-                targetSampleRate: decodingOptions?.targetSampleRate ?? 16000,
-                targetChannels: decodingOptions?.targetChannels ?? 1,
-                normalizeAudio: decodingOptions?.normalizeAudio ?? false,
+                targetSampleRate: (_e = decodingOptions === null || decodingOptions === void 0 ? void 0 : decodingOptions.targetSampleRate) !== null && _e !== void 0 ? _e : 16000,
+                targetChannels: (_f = decodingOptions === null || decodingOptions === void 0 ? void 0 : decodingOptions.targetChannels) !== null && _f !== void 0 ? _f : 1,
+                normalizeAudio: (_g = decodingOptions === null || decodingOptions === void 0 ? void 0 : decodingOptions.normalizeAudio) !== null && _g !== void 0 ? _g : false,
                 position,
                 length,
                 startTimeMs,
                 endTimeMs,
                 logger,
             });
-            logger?.debug('EXTRACT AUDIO - Step 2: Audio processing complete', {
+            logger === null || logger === void 0 ? void 0 : logger.debug('EXTRACT AUDIO - Step 2: Audio processing complete', {
                 processedData: {
                     samples: processedBuffer.samples,
                     sampleRate: processedBuffer.sampleRate,
@@ -112,10 +114,10 @@ if (Platform.OS === 'web') {
                 },
             });
             const channelData = processedBuffer.channelData;
-            const bitDepth = (decodingOptions?.targetBitDepth ?? 16);
+            const bitDepth = ((_h = decodingOptions === null || decodingOptions === void 0 ? void 0 : decodingOptions.targetBitDepth) !== null && _h !== void 0 ? _h : 16);
             const bytesPerSample = bitDepth / 8;
             const numSamples = processedBuffer.samples;
-            logger?.debug('EXTRACT AUDIO - Step 3: PCM conversion setup', {
+            logger === null || logger === void 0 ? void 0 : logger.debug('EXTRACT AUDIO - Step 3: PCM conversion setup', {
                 channelData: {
                     length: channelData.length,
                     first: channelData[0],
@@ -146,7 +148,7 @@ if (Platform.OS === 'web') {
                 pcmData[offset++] = (intValue >> 8) & 255; // High byte
             }
             const durationMs = Math.round((numSamples / processedBuffer.sampleRate) * 1000);
-            logger?.debug('EXTRACT AUDIO - Step 4: Final output', {
+            logger === null || logger === void 0 ? void 0 : logger.debug('EXTRACT AUDIO - Step 4: Final output', {
                 pcmData: {
                     length: pcmData.length,
                     first: pcmData[0],
@@ -157,7 +159,7 @@ if (Platform.OS === 'web') {
                     sampleRate: processedBuffer.sampleRate,
                     durationMs,
                     shouldBe3000ms: endTimeMs
-                        ? endTimeMs - (startTimeMs ?? 0) === 3000
+                        ? endTimeMs - (startTimeMs !== null && startTimeMs !== void 0 ? startTimeMs : 0) === 3000
                         : undefined,
                 },
             });
@@ -172,7 +174,7 @@ if (Platform.OS === 'web') {
             };
             // Add WAV header if requested
             if (includeWavHeader) {
-                logger?.debug('EXTRACT AUDIO - Step 4: Adding WAV header', {
+                logger === null || logger === void 0 ? void 0 : logger.debug('EXTRACT AUDIO - Step 4: Adding WAV header', {
                     originalLength: pcmData.length,
                     newLength: result.pcmData.length,
                     firstBytes: Array.from(result.pcmData.slice(0, 44)), // WAV header is 44 bytes
@@ -215,7 +217,7 @@ if (Platform.OS === 'web') {
             if (options.computeChecksum) {
                 result.checksum = crc32.buf(pcmData);
             }
-            logger?.debug('EXTRACT AUDIO - Step 3: PCM conversion complete', {
+            logger === null || logger === void 0 ? void 0 : logger.debug('EXTRACT AUDIO - Step 3: PCM conversion complete', {
                 pcmStats: {
                     length: pcmData.length,
                     bytesPerSample,
@@ -227,7 +229,7 @@ if (Platform.OS === 'web') {
             return result;
         }
         catch (error) {
-            options.logger?.error('EXTRACT AUDIO - Error:', error);
+            (_j = options.logger) === null || _j === void 0 ? void 0 : _j.error('EXTRACT AUDIO - Error:', error);
             throw error;
         }
     };
@@ -268,10 +270,10 @@ if (Platform.OS === 'web') {
                 firstSamples: Array.from(originalAudioBuffer.getChannelData(0).slice(0, 5)),
             });
             // Determine output format - use original values as defaults if not specified
-            let format = outputFormat?.format || 'wav';
-            const targetSampleRate = outputFormat?.sampleRate || originalSampleRate;
-            const targetChannels = outputFormat?.channels || originalChannels;
-            const targetBitDepth = outputFormat?.bitDepth || 16;
+            let format = (outputFormat === null || outputFormat === void 0 ? void 0 : outputFormat.format) || 'wav';
+            const targetSampleRate = (outputFormat === null || outputFormat === void 0 ? void 0 : outputFormat.sampleRate) || originalSampleRate;
+            const targetChannels = (outputFormat === null || outputFormat === void 0 ? void 0 : outputFormat.channels) || originalChannels;
+            const targetBitDepth = (outputFormat === null || outputFormat === void 0 ? void 0 : outputFormat.bitDepth) || 16;
             // Get file info from the URL
             const filename = outputFileName ||
                 fileUri.split('/').pop() ||
@@ -455,7 +457,7 @@ if (Platform.OS === 'web') {
             else if (format === 'opus' || format === 'aac') {
                 try {
                     // Try to use MediaRecorder for compressed formats
-                    const { data, bitrate } = await encodeCompressedAudio(resultBuffer, format, outputFormat?.bitrate);
+                    const { data, bitrate } = await encodeCompressedAudio(resultBuffer, format, outputFormat === null || outputFormat === void 0 ? void 0 : outputFormat.bitrate);
                     outputData = data;
                     outputMimeType =
                         format === 'opus' ? 'audio/webm' : 'audio/aac';
@@ -710,4 +712,3 @@ if (Platform.OS !== 'web') {
     ExpoAudioStreamModule = requireNativeModule('ExpoAudioStream');
 }
 export default ExpoAudioStreamModule;
-//# sourceMappingURL=ExpoAudioStreamModule.js.map

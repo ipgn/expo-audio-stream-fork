@@ -5,4 +5,3 @@ export const DeviceDisconnectionBehavior = {
     /** Switch to default device and continue recording */
     FALLBACK: 'fallback',
 };
-//# sourceMappingURL=ExpoAudioStream.types.js.map

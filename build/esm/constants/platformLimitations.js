@@ -87,4 +87,3 @@ export function validateRecordingConfig(config) {
         warnings,
     };
 }
-//# sourceMappingURL=platformLimitations.js.map

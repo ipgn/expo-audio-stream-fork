@@ -47,4 +47,3 @@ else {
     crc32Implementation = Object.assign(() => 0, { buf: () => 0 });
 }
 export default crc32Implementation;
-//# sourceMappingURL=crc32.js.map

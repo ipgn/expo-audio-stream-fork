@@ -9,4 +9,3 @@ const extractAudioData = async (props) => {
     return await ExpoAudioStreamModule_1.default.extractAudioData(props);
 };
 exports.extractAudioData = extractAudioData;
-//# sourceMappingURL=extractAudioData.js.map

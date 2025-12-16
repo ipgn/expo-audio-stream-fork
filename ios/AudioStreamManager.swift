@@ -673,7 +673,80 @@ class AudioStreamManager: NSObject, AudioDeviceManagerDelegate {
         
         return status
     }
-    
+
+    /// Gets detailed debug information for troubleshooting audio issues
+    /// - Returns: A dictionary containing diagnostic information
+    func getDebugInfo() -> [String: Any] {
+        let session = AVAudioSession.sharedInstance()
+        let inputNode = audioEngine.inputNode
+        let inputFormat = inputNode.inputFormat(forBus: 0)
+        let outputFormat = inputNode.outputFormat(forBus: 0)
+
+        var debugInfo: [String: Any] = [
+            "engineIsRunning": audioEngine.isRunning,
+            "isRecording": isRecording,
+            "isPaused": isPaused,
+            "isPrepared": isPrepared,
+            "debugBufferCounter": debugBufferCounter,
+            "totalDataSize": totalDataSize,
+            "hasDelegate": delegate != nil,
+            "hasRecordingSettings": recordingSettings != nil
+        ]
+
+        // Audio session info
+        debugInfo["sessionCategory"] = session.category.rawValue
+        debugInfo["sessionMode"] = session.mode.rawValue
+        debugInfo["sessionOptions"] = session.categoryOptions.rawValue
+        debugInfo["sessionSampleRate"] = session.sampleRate
+        debugInfo["sessionInputLatency"] = session.inputLatency
+        debugInfo["sessionOutputLatency"] = session.outputLatency
+        debugInfo["sessionIsActive"] = true // Can't actually query this directly
+
+        // Input format info
+        debugInfo["inputFormatSampleRate"] = inputFormat.sampleRate
+        debugInfo["inputFormatChannelCount"] = inputFormat.channelCount
+        debugInfo["inputFormatCommonFormat"] = inputFormat.commonFormat.rawValue
+        debugInfo["inputFormatIsInterleaved"] = inputFormat.isInterleaved
+
+        // Output format info (what the tap receives)
+        debugInfo["outputFormatSampleRate"] = outputFormat.sampleRate
+        debugInfo["outputFormatChannelCount"] = outputFormat.channelCount
+
+        // Check for common issues
+        if inputFormat.sampleRate == 0 {
+            debugInfo["issue"] = "INPUT_FORMAT_INVALID: Sample rate is 0"
+        } else if inputFormat.channelCount == 0 {
+            debugInfo["issue"] = "INPUT_FORMAT_INVALID: Channel count is 0"
+        } else if !audioEngine.isRunning && isRecording {
+            debugInfo["issue"] = "ENGINE_NOT_RUNNING: isRecording=true but engine not running"
+        } else if delegate == nil {
+            debugInfo["issue"] = "NO_DELEGATE: Audio manager has no delegate set"
+        }
+
+        // Recording settings if available
+        if let settings = recordingSettings {
+            debugInfo["settingsSampleRate"] = settings.sampleRate
+            debugInfo["settingsChannels"] = settings.numberOfChannels
+            debugInfo["settingsBitDepth"] = settings.bitDepth
+            debugInfo["settingsInterval"] = settings.interval ?? 1000
+            if let iosConfig = settings.ios?.audioSession {
+                debugInfo["configuredCategory"] = iosConfig.category.rawValue
+                debugInfo["configuredMode"] = iosConfig.mode.rawValue
+                debugInfo["configuredOptions"] = iosConfig.categoryOptions.rawValue
+            }
+        }
+
+        // Current route info
+        if let input = session.currentRoute.inputs.first {
+            debugInfo["currentInputPort"] = input.portType.rawValue
+            debugInfo["currentInputName"] = input.portName
+        } else {
+            debugInfo["currentInputPort"] = "NONE"
+        }
+
+        return debugInfo
+    }
+
     /// Detects if a phone call is active without using CallKit.
     /// We avoid CallKit because its usage prevents apps from being available in China's App Store.
     /// This is a workaround that uses AVAudioSession to detect phone calls instead.

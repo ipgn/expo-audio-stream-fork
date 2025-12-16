@@ -23,21 +23,22 @@ function calculateCRC32ForDataPoint(data) {
  * @throws {Error} If both time and byte ranges are provided or if required parameters are missing.
  */
 export async function extractAudioAnalysis(props) {
+    var _a, _b, _c, _d;
     const { fileUri, arrayBuffer, decodingOptions, logger, segmentDurationMs = 100, features, } = props;
     if (isWeb) {
         try {
             // Create AudioContext here
             const audioContext = new (window.AudioContext ||
                 window.webkitAudioContext)({
-                sampleRate: decodingOptions?.targetSampleRate ?? 16000,
+                sampleRate: (_a = decodingOptions === null || decodingOptions === void 0 ? void 0 : decodingOptions.targetSampleRate) !== null && _a !== void 0 ? _a : 16000,
             });
             try {
                 const processedBuffer = await processAudioBuffer({
                     arrayBuffer,
                     fileUri,
-                    targetSampleRate: decodingOptions?.targetSampleRate ?? 16000,
-                    targetChannels: decodingOptions?.targetChannels ?? 1,
-                    normalizeAudio: decodingOptions?.normalizeAudio ?? false,
+                    targetSampleRate: (_b = decodingOptions === null || decodingOptions === void 0 ? void 0 : decodingOptions.targetSampleRate) !== null && _b !== void 0 ? _b : 16000,
+                    targetChannels: (_c = decodingOptions === null || decodingOptions === void 0 ? void 0 : decodingOptions.targetChannels) !== null && _c !== void 0 ? _c : 1,
+                    normalizeAudio: (_d = decodingOptions === null || decodingOptions === void 0 ? void 0 : decodingOptions.normalizeAudio) !== null && _d !== void 0 ? _d : false,
                     startTimeMs: 'startTimeMs' in props ? props.startTimeMs : undefined,
                     endTimeMs: 'endTimeMs' in props ? props.endTimeMs : undefined,
                     position: 'position' in props ? props.position : undefined,
@@ -53,6 +54,7 @@ export async function extractAudioAnalysis(props) {
                 const workerUrl = URL.createObjectURL(blob);
                 const worker = new Worker(workerUrl);
                 return new Promise((resolve, reject) => {
+                    var _a;
                     worker.onmessage = (event) => {
                         if (event.data.error) {
                             reject(new Error(event.data.error));
@@ -60,20 +62,14 @@ export async function extractAudioAnalysis(props) {
                         }
                         const result = event.data.result;
                         // Calculate CRC32 after worker completes if requested
-                        if (features?.crc32) {
+                        if (features === null || features === void 0 ? void 0 : features.crc32) {
                             const samplesPerSegment = Math.floor((processedBuffer.sampleRate *
                                 segmentDurationMs) /
                                 1000);
                             result.dataPoints = result.dataPoints.map((point, index) => {
                                 const startSample = index * samplesPerSegment;
                                 const segmentData = channelData.slice(startSample, startSample + samplesPerSegment);
-                                return {
-                                    ...point,
-                                    features: {
-                                        ...point.features,
-                                        crc32: calculateCRC32ForDataPoint(segmentData),
-                                    },
-                                };
+                                return Object.assign(Object.assign({}, point), { features: Object.assign(Object.assign({}, point.features), { crc32: calculateCRC32ForDataPoint(segmentData) }) });
                             });
                         }
                         URL.revokeObjectURL(workerUrl);
@@ -89,7 +85,7 @@ export async function extractAudioAnalysis(props) {
                         channelData,
                         sampleRate: processedBuffer.sampleRate,
                         segmentDurationMs,
-                        bitDepth: decodingOptions?.targetBitDepth ?? 32,
+                        bitDepth: (_a = decodingOptions === null || decodingOptions === void 0 ? void 0 : decodingOptions.targetBitDepth) !== null && _a !== void 0 ? _a : 32,
                         numberOfChannels: processedBuffer.channels,
                         fullAudioDurationMs: processedBuffer.durationMs,
                         // enableLogging: !!logger,
@@ -102,7 +98,7 @@ export async function extractAudioAnalysis(props) {
             }
         }
         catch (error) {
-            logger?.error('Failed to process audio:', error);
+            logger === null || logger === void 0 ? void 0 : logger.error('Failed to process audio:', error);
             throw error;
         }
     }
@@ -124,29 +120,29 @@ arrayBuffer, bitDepth, durationMs, sampleRate, numberOfChannels, features, logge
             throw new Error('Either arrayBuffer or fileUri must be provided');
         }
         if (!arrayBuffer) {
-            logger?.log(`fetching fileUri`, fileUri);
+            logger === null || logger === void 0 ? void 0 : logger.log(`fetching fileUri`, fileUri);
             const response = await fetch(fileUri);
             if (!response.ok) {
                 throw new Error(`Failed to fetch fileUri: ${response.statusText}`);
             }
             arrayBuffer = await response.arrayBuffer();
-            logger?.log(`fetched fileUri`, arrayBuffer.byteLength, arrayBuffer);
+            logger === null || logger === void 0 ? void 0 : logger.log(`fetched fileUri`, arrayBuffer.byteLength, arrayBuffer);
         }
         // Create a new copy of the ArrayBuffer to avoid detachment issues
         const bufferCopy = arrayBuffer.slice(0);
-        logger?.log(`extractAudioAnalysis bitDepth=${bitDepth} len=${bufferCopy.byteLength}`, bufferCopy.slice(0, 100));
+        logger === null || logger === void 0 ? void 0 : logger.log(`extractAudioAnalysis bitDepth=${bitDepth} len=${bufferCopy.byteLength}`, bufferCopy.slice(0, 100));
         let actualBitDepth = bitDepth;
         if (!actualBitDepth) {
-            logger?.log(`extractAudioAnalysis bitDepth not provided -- getting wav file info`);
+            logger === null || logger === void 0 ? void 0 : logger.log(`extractAudioAnalysis bitDepth not provided -- getting wav file info`);
             const fileInfo = await getWavFileInfo(bufferCopy);
             actualBitDepth = fileInfo.bitDepth;
         }
-        logger?.log(`extractAudioAnalysis actualBitDepth=${actualBitDepth}`);
+        logger === null || logger === void 0 ? void 0 : logger.log(`extractAudioAnalysis actualBitDepth=${actualBitDepth}`);
         const { pcmValues: channelData, min, max, } = await convertPCMToFloat32({
             buffer: arrayBuffer,
             bitDepth: actualBitDepth,
         });
-        logger?.log(`extractAudioAnalysis convertPCMToFloat32 length=${channelData.length} range: [ ${min} :: ${max} ]`);
+        logger === null || logger === void 0 ? void 0 : logger.log(`extractAudioAnalysis convertPCMToFloat32 length=${channelData.length} range: [ ${min} :: ${max} ]`);
         // Apply position and length constraints to channelData if specified
         const startIndex = position;
         const endIndex = length ? startIndex + length : channelData.length;
@@ -179,7 +175,7 @@ arrayBuffer, bitDepth, durationMs, sampleRate, numberOfChannels, features, logge
         if (!fileUri) {
             throw new Error('fileUri is required');
         }
-        logger?.log(`extractAudioAnalysis`, {
+        logger === null || logger === void 0 ? void 0 : logger.log(`extractAudioAnalysis`, {
             fileUri,
             segmentDurationMs,
         });
@@ -190,8 +186,7 @@ arrayBuffer, bitDepth, durationMs, sampleRate, numberOfChannels, features, logge
             position,
             length,
         });
-        logger?.log(`extractAudioAnalysis`, res);
+        logger === null || logger === void 0 ? void 0 : logger.log(`extractAudioAnalysis`, res);
         return res;
     }
 };
-//# sourceMappingURL=extractAudioAnalysis.js.map

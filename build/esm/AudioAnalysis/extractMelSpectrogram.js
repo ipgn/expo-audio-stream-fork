@@ -13,6 +13,7 @@ import { processAudioBuffer, } from '../utils/audioProcessing';
  * The web implementation is a placeholder that returns dummy data.
  */
 export async function extractMelSpectrogram(options) {
+    var _a;
     const { fileUri, arrayBuffer, windowSizeMs, hopLengthMs, nMels, fMin = 0, fMax, windowType = 'hann', normalize = false, logScale = true, decodingOptions, startTimeMs, endTimeMs, logger, } = options;
     if (isWeb) {
         // Create audio context
@@ -23,9 +24,9 @@ export async function extractMelSpectrogram(options) {
             const processedAudio = await processAudioBuffer({
                 arrayBuffer,
                 fileUri,
-                targetSampleRate: decodingOptions?.targetSampleRate || 16000,
-                targetChannels: decodingOptions?.targetChannels || 1,
-                normalizeAudio: decodingOptions?.normalizeAudio ?? false,
+                targetSampleRate: (decodingOptions === null || decodingOptions === void 0 ? void 0 : decodingOptions.targetSampleRate) || 16000,
+                targetChannels: (decodingOptions === null || decodingOptions === void 0 ? void 0 : decodingOptions.targetChannels) || 1,
+                normalizeAudio: (_a = decodingOptions === null || decodingOptions === void 0 ? void 0 : decodingOptions.normalizeAudio) !== null && _a !== void 0 ? _a : false,
                 startTimeMs,
                 endTimeMs,
                 audioContext,
@@ -48,7 +49,7 @@ export async function extractMelSpectrogram(options) {
             };
         }
         catch (error) {
-            logger?.error('Error extracting mel spectrogram:', error);
+            logger === null || logger === void 0 ? void 0 : logger.error('Error extracting mel spectrogram:', error);
             throw error;
         }
         finally {
@@ -82,4 +83,3 @@ function computeMelSpectrogram(audioData, sampleRate, nMels, windowSize, hopLeng
     }
     return spectrogram;
 }
-//# sourceMappingURL=extractMelSpectrogram.js.map

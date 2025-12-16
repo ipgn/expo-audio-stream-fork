@@ -18,4 +18,3 @@ export const concatenateBuffers = (buffers) => {
     }
     return result.buffer;
 };
-//# sourceMappingURL=concatenateBuffers.js.map

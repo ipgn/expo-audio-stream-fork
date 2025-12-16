@@ -12,35 +12,6 @@ const DEFAULT_WEB_INTERVAL = 500;
 const DEFAULT_WEB_NUMBER_OF_CHANNELS = 1;
 const TAG = 'WebRecorder';
 class WebRecorder {
-    audioContext;
-    audioWorkletNode;
-    featureExtractorWorker;
-    source;
-    emitAudioEventCallback;
-    emitAudioAnalysisCallback;
-    config;
-    position = 0;
-    numberOfChannels; // Number of audio channels
-    bitDepth; // Bit depth of the audio
-    exportBitDepth; // Bit depth of the audio
-    audioAnalysisData; // Keep updating the full audio analysis data with latest events
-    logger;
-    compressedMediaRecorder = null;
-    compressedChunks = [];
-    compressedSize = 0;
-    pendingCompressedChunk = null;
-    dataPointIdCounter = 0; // Add this property to track the counter
-    deviceDisconnectionHandler = null;
-    mediaStream = null;
-    onInterruptionCallback;
-    _isDeviceDisconnected = false;
-    pcmData = null; // Store original PCM data
-    totalSampleCount = 0;
-    /**
-     * Flag to indicate whether this is the first audio chunk after a device switch
-     * Used to maintain proper duration counting
-     */
-    isFirstChunkAfterSwitch = false;
     /**
      * Gets whether the recording device has been disconnected
      */
@@ -58,6 +29,23 @@ class WebRecorder {
      * @param logger - Optional logger for debugging information
      */
     constructor({ audioContext, source, recordingConfig, emitAudioEventCallback, emitAudioAnalysisCallback, onInterruption, logger, }) {
+        var _a, _b, _c, _d, _e;
+        this.position = 0;
+        this.compressedMediaRecorder = null;
+        this.compressedChunks = [];
+        this.compressedSize = 0;
+        this.pendingCompressedChunk = null;
+        this.dataPointIdCounter = 0; // Add this property to track the counter
+        this.deviceDisconnectionHandler = null;
+        this.mediaStream = null;
+        this._isDeviceDisconnected = false;
+        this.pcmData = null; // Store original PCM data
+        this.totalSampleCount = 0;
+        /**
+         * Flag to indicate whether this is the first audio chunk after a device switch
+         * Used to maintain proper duration counting
+         */
+        this.isFirstChunkAfterSwitch = false;
         this.audioContext = audioContext;
         this.source = source;
         this.emitAudioEventCallback = emitAudioEventCallback;
@@ -67,7 +55,7 @@ class WebRecorder {
         const audioContextFormat = this.checkAudioContextFormat({
             sampleRate: this.audioContext.sampleRate,
         });
-        this.logger?.debug('Initialized WebRecorder with config:', {
+        (_a = this.logger) === null || _a === void 0 ? void 0 : _a.debug('Initialized WebRecorder with config:', {
             sampleRate: audioContextFormat.sampleRate,
             bitDepth: audioContextFormat.bitDepth,
             numberOfChannels: audioContextFormat.numberOfChannels,
@@ -78,7 +66,7 @@ class WebRecorder {
                 DEFAULT_WEB_NUMBER_OF_CHANNELS; // Default to 1 if not available
         this.exportBitDepth =
             (0, encodingToBitDepth_1.encodingToBitDepth)({
-                encoding: recordingConfig.encoding ?? 'pcm_32bit',
+                encoding: (_b = recordingConfig.encoding) !== null && _b !== void 0 ? _b : 'pcm_32bit',
             }) ||
                 audioContextFormat.bitDepth ||
                 DEFAULT_WEB_BITDEPTH;
@@ -91,14 +79,14 @@ class WebRecorder {
             bitDepth: this.bitDepth,
             numberOfChannels: this.numberOfChannels,
             sampleRate: this.config.sampleRate || this.audioContext.sampleRate,
-            segmentDurationMs: this.config.segmentDurationMs ?? DEFAULT_SEGMENT_DURATION_MS, // Default to 100ms segments
+            segmentDurationMs: (_c = this.config.segmentDurationMs) !== null && _c !== void 0 ? _c : DEFAULT_SEGMENT_DURATION_MS, // Default to 100ms segments
             extractionTimeMs: 0,
         };
         if (recordingConfig.enableProcessing) {
             this.initFeatureExtractorWorker();
         }
         // Initialize compressed recording if enabled
-        if (recordingConfig.output?.compressed?.enabled) {
+        if ((_e = (_d = recordingConfig.output) === null || _d === void 0 ? void 0 : _d.compressed) === null || _e === void 0 ? void 0 : _e.enabled) {
             this.initializeCompressedRecorder();
         }
         this.mediaStream = source.mediaStream;
@@ -111,6 +99,7 @@ class WebRecorder {
      * Creates and connects the audio processing pipeline
      */
     async init() {
+        var _a, _b, _c, _d, _e, _f;
         try {
             // Create and use inline audio worklet
             const blob = new Blob([inlineAudioWebWorker_web_1.InlineAudioWebWorker], {
@@ -120,22 +109,23 @@ class WebRecorder {
             await this.audioContext.audioWorklet.addModule(url);
             this.audioWorkletNode = new AudioWorkletNode(this.audioContext, 'recorder-processor');
             this.audioWorkletNode.port.onmessage = async (event) => {
+                var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q;
                 const command = event.data.command;
                 if (command === 'debug') {
-                    this.logger?.debug(`[AudioWorklet] ${event.data.message}`);
+                    (_a = this.logger) === null || _a === void 0 ? void 0 : _a.debug(`[AudioWorklet] ${event.data.message}`);
                     return;
                 }
                 if (command !== 'newData')
                     return;
                 const pcmBufferFloat = event.data.recordedData;
                 if (!pcmBufferFloat) {
-                    this.logger?.warn('Received empty audio buffer', event);
+                    (_b = this.logger) === null || _b === void 0 ? void 0 : _b.warn('Received empty audio buffer', event);
                     return;
                 }
                 // Process data in smaller chunks and emit immediately
-                const sampleRate = event.data.sampleRate ?? this.audioContext.sampleRate;
+                const sampleRate = (_c = event.data.sampleRate) !== null && _c !== void 0 ? _c : this.audioContext.sampleRate;
                 // Use chunk size from config interval or default to 2 seconds
-                const intervalMs = this.config.interval ?? DEFAULT_WEB_INTERVAL;
+                const intervalMs = (_d = this.config.interval) !== null && _d !== void 0 ? _d : DEFAULT_WEB_INTERVAL;
                 const chunkSize = Math.floor(sampleRate * (intervalMs / 1000));
                 const duration = pcmBufferFloat.length / sampleRate;
                 // Use incoming position if provided by worklet, otherwise use our tracked position
@@ -143,7 +133,7 @@ class WebRecorder {
                     ? event.data.position
                     : this.position;
                 // Simple position tracking for logging (no duplicate filtering)
-                this.logger?.debug(`Audio chunk: position=${incomingPosition.toFixed(3)}s, size=${pcmBufferFloat.length}`);
+                (_e = this.logger) === null || _e === void 0 ? void 0 : _e.debug(`Audio chunk: position=${incomingPosition.toFixed(3)}s, size=${pcmBufferFloat.length}`);
                 // Calculate bytes per sample based on bit depth
                 const bytesPerSample = this.bitDepth / 8;
                 // Emit chunks without storing them
@@ -155,7 +145,7 @@ class WebRecorder {
                     const endPosition = Math.floor((i + chunk.length) * bytesPerSample);
                     const samples = chunk.length; // Number of samples in this chunk
                     // Only store PCM data if primary output is enabled
-                    const shouldStoreUncompressed = this.config.output?.primary?.enabled ?? true;
+                    const shouldStoreUncompressed = (_h = (_g = (_f = this.config.output) === null || _f === void 0 ? void 0 : _f.primary) === null || _g === void 0 ? void 0 : _g.enabled) !== null && _h !== void 0 ? _h : true;
                     // Store PCM chunks when needed - this is for the final WAV file
                     if (shouldStoreUncompressed) {
                         // Store the original Float32Array data for later WAV creation
@@ -169,8 +159,7 @@ class WebRecorder {
                             command: 'process',
                             channelData: chunk,
                             sampleRate,
-                            segmentDurationMs: this.config.segmentDurationMs ??
-                                DEFAULT_SEGMENT_DURATION_MS, // Default to 100ms
+                            segmentDurationMs: (_j = this.config.segmentDurationMs) !== null && _j !== void 0 ? _j : DEFAULT_SEGMENT_DURATION_MS, // Default to 100ms
                             bitDepth: this.bitDepth,
                             fullAudioDurationMs: chunkPosition * 1000,
                             numberOfChannels: this.numberOfChannels,
@@ -188,10 +177,8 @@ class WebRecorder {
                             size: this.pendingCompressedChunk.size,
                             totalSize: this.compressedSize,
                             mimeType: 'audio/webm',
-                            format: this.config.output?.compressed?.format ??
-                                'opus',
-                            bitrate: this.config.output?.compressed?.bitrate ??
-                                128000,
+                            format: (_m = (_l = (_k = this.config.output) === null || _k === void 0 ? void 0 : _k.compressed) === null || _l === void 0 ? void 0 : _l.format) !== null && _m !== void 0 ? _m : 'opus',
+                            bitrate: (_q = (_p = (_o = this.config.output) === null || _o === void 0 ? void 0 : _o.compressed) === null || _p === void 0 ? void 0 : _p.bitrate) !== null && _q !== void 0 ? _q : 128000,
                         }
                         : undefined;
                     // Emit chunk immediately - whether compressed or not
@@ -208,10 +195,10 @@ class WebRecorder {
             };
             // Ensure we use all relevant settings from config
             const recordSampleRate = this.audioContext.sampleRate;
-            const exportSampleRate = this.config.sampleRate ?? this.audioContext.sampleRate;
-            const channels = this.config.channels ?? this.numberOfChannels;
-            const interval = this.config.interval ?? DEFAULT_WEB_INTERVAL;
-            this.logger?.debug(`WebRecorder initialized with config:`, {
+            const exportSampleRate = (_a = this.config.sampleRate) !== null && _a !== void 0 ? _a : this.audioContext.sampleRate;
+            const channels = (_b = this.config.channels) !== null && _b !== void 0 ? _b : this.numberOfChannels;
+            const interval = (_c = this.config.interval) !== null && _c !== void 0 ? _c : DEFAULT_WEB_INTERVAL;
+            (_d = this.logger) === null || _d === void 0 ? void 0 : _d.debug(`WebRecorder initialized with config:`, {
                 recordSampleRate,
                 exportSampleRate,
                 bitDepth: this.bitDepth,
@@ -219,8 +206,8 @@ class WebRecorder {
                 channels,
                 interval,
                 position: this.position,
-                deviceId: this.config.deviceId ?? 'default',
-                compression: this.config.output?.compressed
+                deviceId: (_e = this.config.deviceId) !== null && _e !== void 0 ? _e : 'default',
+                compression: ((_f = this.config.output) === null || _f === void 0 ? void 0 : _f.compressed)
                     ? {
                         enabled: this.config.output.compressed.enabled,
                         format: this.config.output.compressed.format,
@@ -274,6 +261,7 @@ class WebRecorder {
      * Creates an inline worker from a blob for audio feature extraction
      */
     initFeatureExtractorWorker() {
+        var _a, _b;
         try {
             const blob = new Blob([InlineFeaturesExtractor_web_1.InlineFeaturesExtractor], {
                 type: 'application/javascript',
@@ -291,9 +279,9 @@ class WebRecorder {
                     command: 'resetCounter',
                     value: this.dataPointIdCounter,
                 });
-                this.logger?.debug(`Initialized worker with counter value ${this.dataPointIdCounter}`);
+                (_a = this.logger) === null || _a === void 0 ? void 0 : _a.debug(`Initialized worker with counter value ${this.dataPointIdCounter}`);
             }
-            this.logger?.log('Feature extractor worker initialized successfully');
+            (_b = this.logger) === null || _b === void 0 ? void 0 : _b.log('Feature extractor worker initialized successfully');
         }
         catch (error) {
             console.error(`[${TAG}] Failed to initialize feature extractor worker`, error);
@@ -314,22 +302,20 @@ class WebRecorder {
         // Update analysis data with the new results
         this.updateAudioAnalysisData(segmentResult, uniqueNewDataPoints);
         // Send filtered result to avoid duplicate IDs
-        const filteredSegmentResult = {
-            ...segmentResult,
-            dataPoints: uniqueNewDataPoints,
-        };
+        const filteredSegmentResult = Object.assign(Object.assign({}, segmentResult), { dataPoints: uniqueNewDataPoints });
         this.emitAudioAnalysisCallback(filteredSegmentResult);
     }
     /**
      * Filters out data points with duplicate IDs
      */
     filterUniqueDataPoints(dataPoints) {
+        var _a;
         // Track existing IDs to prevent duplicates
         const existingIds = new Set(this.audioAnalysisData.dataPoints.map((dp) => dp.id));
         // Filter out datapoints with duplicate IDs
         const uniquePoints = dataPoints.filter((dp) => !existingIds.has(dp.id));
         // Log filtered duplicates if any
-        if (uniquePoints.length < dataPoints.length && this.logger?.warn) {
+        if (uniquePoints.length < dataPoints.length && ((_a = this.logger) === null || _a === void 0 ? void 0 : _a.warn)) {
             this.logger.warn(`Filtered ${dataPoints.length - uniquePoints.length} duplicate datapoints`);
         }
         return uniquePoints;
@@ -338,6 +324,7 @@ class WebRecorder {
      * Updates the counter based on the highest ID in datapoints
      */
     updateDataPointCounter(dataPoints) {
+        var _a;
         if (dataPoints.length === 0)
             return;
         const lastDataPoint = dataPoints[dataPoints.length - 1];
@@ -345,7 +332,7 @@ class WebRecorder {
             const nextIdValue = lastDataPoint.id + 1;
             if (nextIdValue > this.dataPointIdCounter) {
                 this.dataPointIdCounter = nextIdValue;
-                this.logger?.debug(`Counter updated to ${this.dataPointIdCounter}`);
+                (_a = this.logger) === null || _a === void 0 ? void 0 : _a.debug(`Counter updated to ${this.dataPointIdCounter}`);
             }
         }
     }
@@ -371,7 +358,7 @@ class WebRecorder {
      */
     mergeRange(existing, newRange) {
         if (!existing)
-            return { ...newRange };
+            return Object.assign({}, newRange);
         return {
             min: Math.min(existing.min, newRange.min),
             max: Math.max(existing.max, newRange.max),
@@ -382,9 +369,10 @@ class WebRecorder {
      * @param startCounterFrom Optional value to start the counter from (for continuing from previous recordings)
      */
     resetDataPointCounter(startCounterFrom) {
+        var _a, _b;
         // Set the counter with the passed value or 0
-        this.dataPointIdCounter = startCounterFrom ?? 0;
-        this.logger?.debug(`Reset data point counter to ${this.dataPointIdCounter}`);
+        this.dataPointIdCounter = startCounterFrom !== null && startCounterFrom !== void 0 ? startCounterFrom : 0;
+        (_a = this.logger) === null || _a === void 0 ? void 0 : _a.debug(`Reset data point counter to ${this.dataPointIdCounter}`);
         // Update worker counter if available
         if (this.featureExtractorWorker) {
             this.featureExtractorWorker.postMessage({
@@ -393,7 +381,7 @@ class WebRecorder {
             });
         }
         else {
-            this.logger?.warn('No feature extractor worker available to update counter');
+            (_b = this.logger) === null || _b === void 0 ? void 0 : _b.warn('No feature extractor worker available to update counter');
         }
     }
     /**
@@ -408,8 +396,9 @@ class WebRecorder {
      * Sets up all necessary state to maintain proper recording continuity
      */
     prepareForDeviceSwitch() {
+        var _a;
         this.isFirstChunkAfterSwitch = true;
-        this.logger?.debug(`Prepared for device switch at position ${this.position}s`);
+        (_a = this.logger) === null || _a === void 0 ? void 0 : _a.debug(`Prepared for device switch at position ${this.position}s`);
     }
     /**
      * Starts the audio recording process
@@ -417,11 +406,12 @@ class WebRecorder {
      * @param preserveCounters If true, do not reset the counter (used for device switching)
      */
     start(preserveCounters = false) {
+        var _a, _b, _c;
         this.source.connect(this.audioWorkletNode);
         this.audioWorkletNode.connect(this.audioContext.destination);
         // Only reset the counter when not preserving state (e.g., for a fresh recording)
         if (!preserveCounters) {
-            this.logger?.debug('Starting fresh recording, resetting counter to 0');
+            (_a = this.logger) === null || _a === void 0 ? void 0 : _a.debug('Starting fresh recording, resetting counter to 0');
             this.resetDataPointCounter(0); // Explicitly reset to 0 for new recordings
             this.isFirstChunkAfterSwitch = false;
             // Clear PCM data for new recording
@@ -429,23 +419,24 @@ class WebRecorder {
             this.totalSampleCount = 0;
         }
         else {
-            this.logger?.debug(`Preserving counter at ${this.dataPointIdCounter} during device switch`);
+            (_b = this.logger) === null || _b === void 0 ? void 0 : _b.debug(`Preserving counter at ${this.dataPointIdCounter} during device switch`);
         }
         if (this.compressedMediaRecorder) {
-            this.compressedMediaRecorder.start(this.config.interval ?? 1000);
+            this.compressedMediaRecorder.start((_c = this.config.interval) !== null && _c !== void 0 ? _c : 1000);
         }
     }
     /**
      * Creates a WAV file from the stored PCM data
      */
     createWavFromPcmData() {
+        var _a, _b, _c;
         try {
             // Check if we have PCM data
             if (!this.pcmData || this.pcmData.length === 0) {
-                this.logger?.warn('No PCM data available to create WAV file');
+                (_a = this.logger) === null || _a === void 0 ? void 0 : _a.warn('No PCM data available to create WAV file');
                 return null;
             }
-            const sampleRate = this.config.sampleRate ?? this.audioContext.sampleRate;
+            const sampleRate = (_b = this.config.sampleRate) !== null && _b !== void 0 ? _b : this.audioContext.sampleRate;
             const channels = this.numberOfChannels || 1;
             // Convert float32 PCM data to 16-bit PCM for WAV
             const bytesPerSample = 2; // 16-bit = 2 bytes
@@ -469,7 +460,7 @@ class WebRecorder {
             return new Blob([wavBuffer], { type: 'audio/wav' });
         }
         catch (error) {
-            this.logger?.error('Error creating WAV file from PCM data:', error);
+            (_c = this.logger) === null || _c === void 0 ? void 0 : _c.error('Error creating WAV file from PCM data:', error);
             return null;
         }
     }
@@ -521,6 +512,7 @@ class WebRecorder {
      * Closes audio context and disconnects nodes
      */
     cleanup() {
+        var _a, _b;
         // Remove device disconnection handler
         if (this.deviceDisconnectionHandler) {
             this.deviceDisconnectionHandler();
@@ -529,8 +521,9 @@ class WebRecorder {
         // Check if AudioContext is already closed before attempting to close it
         if (this.audioContext && this.audioContext.state !== 'closed') {
             this.audioContext.close().catch((e) => {
+                var _a;
                 // Log closure errors but continue cleanup
-                this.logger?.warn('Error closing AudioContext:', e);
+                (_a = this.logger) === null || _a === void 0 ? void 0 : _a.warn('Error closing AudioContext:', e);
             });
         }
         // Safely disconnect audioWorkletNode if it exists
@@ -540,7 +533,7 @@ class WebRecorder {
             }
             catch (e) {
                 // Log disconnection errors but continue cleanup
-                this.logger?.warn('Error disconnecting audioWorkletNode:', e);
+                (_a = this.logger) === null || _a === void 0 ? void 0 : _a.warn('Error disconnecting audioWorkletNode:', e);
             }
         }
         // Safely disconnect source if it exists
@@ -550,7 +543,7 @@ class WebRecorder {
             }
             catch (e) {
                 // Log disconnection errors but continue cleanup
-                this.logger?.warn('Error disconnecting source:', e);
+                (_b = this.logger) === null || _b === void 0 ? void 0 : _b.warn('Error disconnecting source:', e);
             }
         }
         // Always stop media stream tracks to release hardware resources
@@ -563,19 +556,20 @@ class WebRecorder {
      * Disconnects audio nodes and pauses the media recorder
      */
     pause() {
+        var _a, _b, _c;
         try {
             // Note: We're just pausing, not disconnecting the device
             // Simply disconnect nodes temporarily without marking device as disconnected
             this.source.disconnect(this.audioWorkletNode);
             this.audioWorkletNode.disconnect(this.audioContext.destination);
             this.audioWorkletNode.port.postMessage({ command: 'pause' });
-            if (this.compressedMediaRecorder?.state === 'recording') {
+            if (((_a = this.compressedMediaRecorder) === null || _a === void 0 ? void 0 : _a.state) === 'recording') {
                 this.compressedMediaRecorder.pause();
             }
-            this.logger?.debug('Recording paused successfully');
+            (_b = this.logger) === null || _b === void 0 ? void 0 : _b.debug('Recording paused successfully');
         }
         catch (error) {
-            this.logger?.error('Error in pause(): ', error);
+            (_c = this.logger) === null || _c === void 0 ? void 0 : _c.error('Error in pause(): ', error);
             // Already disconnected, just ignore and continue
         }
     }
@@ -584,12 +578,13 @@ class WebRecorder {
      * Ensures recording indicators (like microphone icon) are turned off
      */
     stopMediaStreamTracks() {
+        var _a;
         // Stop all audio tracks to stop the recording icon
         if (this.mediaStream) {
             const tracks = this.mediaStream.getTracks();
             tracks.forEach((track) => track.stop());
         }
-        else if (this.source?.mediaStream) {
+        else if ((_a = this.source) === null || _a === void 0 ? void 0 : _a.mediaStream) {
             const tracks = this.source.mediaStream.getTracks();
             tracks.forEach((track) => track.stop());
         }
@@ -617,19 +612,20 @@ class WebRecorder {
      * Reconnects audio nodes and resumes the media recorder
      */
     resume() {
+        var _a, _b, _c;
         // If device was disconnected, we can't resume
         if (this._isDeviceDisconnected) {
-            this.logger?.warn('Cannot resume recording: device disconnected');
+            (_a = this.logger) === null || _a === void 0 ? void 0 : _a.warn('Cannot resume recording: device disconnected');
             return;
         }
         try {
             this.source.connect(this.audioWorkletNode);
             this.audioWorkletNode.connect(this.audioContext.destination);
             this.audioWorkletNode.port.postMessage({ command: 'resume' });
-            this.compressedMediaRecorder?.resume();
+            (_b = this.compressedMediaRecorder) === null || _b === void 0 ? void 0 : _b.resume();
         }
         catch (error) {
-            this.logger?.error('Error in resume(): ', error);
+            (_c = this.logger) === null || _c === void 0 ? void 0 : _c.error('Error in resume(): ', error);
             // Rethrow the error to inform callers
             throw new Error(`Failed to resume recording: ${error instanceof Error ? error.message : 'unknown error'}`);
         }
@@ -639,15 +635,16 @@ class WebRecorder {
      * Sets up event handlers for compressed audio data
      */
     initializeCompressedRecorder() {
+        var _a, _b, _c, _d, _e;
         try {
             const mimeType = 'audio/webm;codecs=opus';
             if (!MediaRecorder.isTypeSupported(mimeType)) {
-                this.logger?.warn('Opus compression not supported in this browser');
+                (_a = this.logger) === null || _a === void 0 ? void 0 : _a.warn('Opus compression not supported in this browser');
                 return;
             }
             this.compressedMediaRecorder = new MediaRecorder(this.source.mediaStream, {
                 mimeType,
-                audioBitsPerSecond: this.config.output?.compressed?.bitrate ?? 128000,
+                audioBitsPerSecond: (_d = (_c = (_b = this.config.output) === null || _b === void 0 ? void 0 : _b.compressed) === null || _c === void 0 ? void 0 : _c.bitrate) !== null && _d !== void 0 ? _d : 128000,
             });
             this.compressedMediaRecorder.ondataavailable = (event) => {
                 if (event.data.size > 0) {
@@ -660,7 +657,7 @@ class WebRecorder {
             };
         }
         catch (error) {
-            this.logger?.error('Failed to initialize compressed recorder:', error);
+            (_e = this.logger) === null || _e === void 0 ? void 0 : _e.error('Failed to initialize compressed recorder:', error);
             // Setting to null to indicate initialization failed
             this.compressedMediaRecorder = null;
         }
@@ -669,13 +666,13 @@ class WebRecorder {
      * Processes features if enabled
      */
     processFeatures(chunk, sampleRate, chunkPosition, startPosition, endPosition, samples) {
+        var _a;
         if (this.config.enableProcessing && this.featureExtractorWorker) {
             this.featureExtractorWorker.postMessage({
                 command: 'process',
                 channelData: chunk,
                 sampleRate,
-                segmentDurationMs: this.config.segmentDurationMs ??
-                    DEFAULT_SEGMENT_DURATION_MS, // Default to 100ms
+                segmentDurationMs: (_a = this.config.segmentDurationMs) !== null && _a !== void 0 ? _a : DEFAULT_SEGMENT_DURATION_MS, // Default to 100ms
                 bitDepth: this.bitDepth,
                 fullAudioDurationMs: chunkPosition * 1000,
                 numberOfChannels: this.numberOfChannels,
@@ -695,7 +692,8 @@ class WebRecorder {
             return;
         // Function to handle track ending (which happens on device disconnection)
         const handleTrackEnded = () => {
-            this.logger?.warn('Audio track ended - device disconnected');
+            var _a, _b, _c;
+            (_a = this.logger) === null || _a === void 0 ? void 0 : _a.warn('Audio track ended - device disconnected');
             this._isDeviceDisconnected = true;
             // Use the callback to notify parent component about device disconnection
             if (this.onInterruptionCallback) {
@@ -704,7 +702,7 @@ class WebRecorder {
                     isPaused: true,
                     timestamp: Date.now(),
                 });
-                this.logger?.debug('Notified about device disconnection');
+                (_b = this.logger) === null || _b === void 0 ? void 0 : _b.debug('Notified about device disconnection');
             }
             // Ensure we disconnect nodes to prevent zombie recordings
             if (this.audioWorkletNode) {
@@ -717,7 +715,7 @@ class WebRecorder {
                 }
                 catch (e) {
                     // Ignore disconnection errors as the track might already be gone
-                    this.logger?.warn('Error disconnecting audioWorkletNode:', e);
+                    (_c = this.logger) === null || _c === void 0 ? void 0 : _c.warn('Error disconnecting audioWorkletNode:', e);
                 }
             }
         };
@@ -738,12 +736,13 @@ class WebRecorder {
      * @param position The position in seconds to continue from
      */
     setPosition(position) {
+        var _a, _b;
         if (position >= 0) {
             this.position = position;
-            this.logger?.debug(`Position explicitly set to ${position} seconds`);
+            (_a = this.logger) === null || _a === void 0 ? void 0 : _a.debug(`Position explicitly set to ${position} seconds`);
         }
         else {
-            this.logger?.warn(`Invalid position value: ${position}, ignoring`);
+            (_b = this.logger) === null || _b === void 0 ? void 0 : _b.warn(`Invalid position value: ${position}, ignoring`);
         }
     }
     /**
@@ -765,8 +764,9 @@ class WebRecorder {
      * @param chunks Array of compressed chunks from a previous recorder
      */
     setCompressedChunks(chunks) {
+        var _a;
         if (chunks && chunks.length > 0) {
-            this.logger?.debug(`Adding ${chunks.length} compressed chunks from previous device`);
+            (_a = this.logger) === null || _a === void 0 ? void 0 : _a.debug(`Adding ${chunks.length} compressed chunks from previous device`);
             this.compressedChunks = [...chunks, ...this.compressedChunks];
             // Update size
             this.compressedSize = this.compressedChunks.reduce((size, chunk) => size + chunk.size, 0);
@@ -774,4 +774,3 @@ class WebRecorder {
     }
 }
 exports.WebRecorder = WebRecorder;
-//# sourceMappingURL=WebRecorder.web.js.map

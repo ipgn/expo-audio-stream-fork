@@ -670,7 +670,22 @@ class AudioStreamManager: NSObject, AudioDeviceManagerDelegate {
                 Logger.debug("AudioStreamManager", "Error getting compressed file attributes: \(error)")
             }
         }
-        
+
+        // Add diagnostic info for debugging audio capture issues
+        let inputNode = audioEngine.inputNode
+        let inputFormat = inputNode.inputFormat(forBus: 0)
+        status["engineIsRunning"] = audioEngine.isRunning
+        status["inputSampleRate"] = inputFormat.sampleRate
+        status["inputChannels"] = inputFormat.channelCount
+        status["bufferCount"] = debugBufferCounter
+
+        // Detect common issues
+        if inputFormat.sampleRate == 0 || inputFormat.channelCount == 0 {
+            status["issue"] = "INPUT_FORMAT_INVALID"
+        } else if !audioEngine.isRunning && isRecording {
+            status["issue"] = "ENGINE_NOT_RUNNING"
+        }
+
         return status
     }
 
@@ -768,12 +783,39 @@ class AudioStreamManager: NSObject, AudioDeviceManagerDelegate {
     ) -> AVAudioFormat {
         // Get the hardware input format
         let inputNode = audioEngine.inputNode
-        let inputHardwareFormat = inputNode.inputFormat(forBus: 0)
+        var inputHardwareFormat = inputNode.inputFormat(forBus: 0)
         let nodeOutputFormat = inputNode.outputFormat(forBus: 0)
-        
+
         // Log format information for diagnostic purposes
         Logger.debug("AudioStreamManager", "Installing tap - Hardware input format: \(describeAudioFormat(inputHardwareFormat))")
         Logger.debug("AudioStreamManager", "Node output format: \(describeAudioFormat(nodeOutputFormat))")
+
+        // CRITICAL: Check if the input format is valid
+        // iOS can return an invalid format (0 sample rate, 0 channels) if the audio session
+        // isn't fully configured yet. This is a common issue that causes the tap to not receive buffers.
+        if inputHardwareFormat.sampleRate == 0 || inputHardwareFormat.channelCount == 0 {
+            Logger.info("AudioStreamManager", "⚠️ INVALID INPUT FORMAT DETECTED: sampleRate=\(inputHardwareFormat.sampleRate), channels=\(inputHardwareFormat.channelCount)")
+            Logger.info("AudioStreamManager", "Waiting 100ms for audio session to stabilize...")
+
+            // Wait for audio session to stabilize
+            Thread.sleep(forTimeInterval: 0.1)
+
+            // Re-query the format
+            inputHardwareFormat = inputNode.inputFormat(forBus: 0)
+            Logger.info("AudioStreamManager", "After wait - Hardware input format: \(describeAudioFormat(inputHardwareFormat))")
+
+            // Still invalid? Try one more time with longer wait
+            if inputHardwareFormat.sampleRate == 0 || inputHardwareFormat.channelCount == 0 {
+                Logger.info("AudioStreamManager", "⚠️ STILL INVALID - waiting 200ms more...")
+                Thread.sleep(forTimeInterval: 0.2)
+                inputHardwareFormat = inputNode.inputFormat(forBus: 0)
+                Logger.info("AudioStreamManager", "Final attempt - Hardware input format: \(describeAudioFormat(inputHardwareFormat))")
+
+                if inputHardwareFormat.sampleRate == 0 || inputHardwareFormat.channelCount == 0 {
+                    Logger.info("AudioStreamManager", "❌ INPUT FORMAT STILL INVALID - tap may not receive audio!")
+                }
+            }
+        }
         
         // Remove any existing tap
         inputNode.removeTap(onBus: 0)

@@ -89,7 +89,6 @@
         "test:coverage": "cd ../../apps/playground/android && ./gradlew :siteed-expo-audio-studio:jacocoTestReport",
         "typecheck": "tsc --noEmit",
         "docgen": "typedoc src/index.ts --plugin typedoc-plugin-markdown --readme none --out ../../documentation_site/docs/api-reference/API",
-        "prepare": "yarn build && node -e \"require('fs').renameSync('./plugin/build/index.d.ts', './plugin/build/index.d.cts')\"",
         "prepublishOnly.disabled": "expo-module prepublishOnly",
         "expo-module": "expo-module",
         "open:ios": "open -a \"Xcode\" ../../apps/playground/ios",

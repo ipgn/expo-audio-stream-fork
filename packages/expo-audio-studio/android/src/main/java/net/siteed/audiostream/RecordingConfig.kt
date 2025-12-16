@@ -1,6 +1,7 @@
 package net.siteed.audiostream
 
 import android.media.AudioFormat
+import android.media.MediaRecorder
 import android.os.Build
 import java.io.File
 
@@ -66,6 +67,8 @@ data class RecordingConfig(
     val deviceDisconnectionBehavior: String? = null,
     val audioFocusStrategy: String? = null,
     val bufferDurationSeconds: Double? = null,
+    /** Audio source for recording. VOICE_COMMUNICATION enables AEC (echo cancellation) */
+    val audioSource: Int = MediaRecorder.AudioSource.MIC,
 ) {
     companion object {
         fun fromMap(options: Map<String, Any?>?): Result<Pair<RecordingConfig, AudioFormatInfo>> {
@@ -131,6 +134,16 @@ data class RecordingConfig(
             val androidConfig = options["android"] as? Map<String, Any>
             val audioFocusStrategy = androidConfig?.get("audioFocusStrategy") as? String
 
+            // Parse audioSource - VOICE_COMMUNICATION enables AEC (echo cancellation)
+            val audioSource = when (androidConfig?.get("audioSource") as? String) {
+                "voice_communication" -> MediaRecorder.AudioSource.VOICE_COMMUNICATION
+                "voice_recognition" -> MediaRecorder.AudioSource.VOICE_RECOGNITION
+                "camcorder" -> MediaRecorder.AudioSource.CAMCORDER
+                "default" -> MediaRecorder.AudioSource.DEFAULT
+                "mic", null -> MediaRecorder.AudioSource.MIC  // Default to current behavior
+                else -> MediaRecorder.AudioSource.MIC
+            }
+
             // Initialize the recording configuration with cleaned directory path
             val tempRecordingConfig = RecordingConfig(
                 sampleRate = options.getNumberOrDefault("sampleRate", Constants.DEFAULT_SAMPLE_RATE),
@@ -158,6 +171,7 @@ data class RecordingConfig(
                 deviceDisconnectionBehavior = deviceDisconnectionBehavior,
                 audioFocusStrategy = audioFocusStrategy,
                 bufferDurationSeconds = (options["bufferDurationSeconds"] as? Number)?.toDouble(),
+                audioSource = audioSource,
             )
 
             // Validate sample rate and channels

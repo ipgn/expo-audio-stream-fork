@@ -251,6 +251,22 @@ export interface AndroidConfig {
      * @default 'background' when keepAwake=true, 'interactive' otherwise
      */
     audioFocusStrategy?: 'background' | 'interactive' | 'communication' | 'none'
+
+    /**
+     * Audio source for recording. Controls which audio input is used.
+     *
+     * - `'mic'`: Standard microphone input (default)
+     * - `'voice_communication'`: Optimized for voice communication, enables AEC (Acoustic Echo Cancellation)
+     * - `'voice_recognition'`: Optimized for voice recognition
+     * - `'camcorder'`: Optimized for video recording with same orientation as camera
+     * - `'default'`: System default audio source
+     *
+     * Use `'voice_communication'` to enable echo cancellation for voice chat applications,
+     * allowing the microphone to filter out audio playing through the speaker.
+     *
+     * @default 'mic'
+     */
+    audioSource?: 'default' | 'mic' | 'voice_communication' | 'voice_recognition' | 'camcorder'
 }
 
 /** Web platform specific configuration options */

@@ -795,7 +795,7 @@ class AudioRecorderManager(
                 LogUtils.d(CLASS_NAME, "Initializing AudioRecord with format: $audioFormat, BufferSize: $bufferSizeInBytes")
 
                 audioRecord = AudioRecord(
-                    MediaRecorder.AudioSource.MIC,
+                    recordingConfig.audioSource,  // Configurable - use VOICE_COMMUNICATION for AEC
                     recordingConfig.sampleRate,
                     if (recordingConfig.channels == 1) AudioFormat.CHANNEL_IN_MONO else AudioFormat.CHANNEL_IN_STEREO,
                     audioFormat,
@@ -1743,7 +1743,7 @@ class AudioRecorderManager(
             }
 
             compressedRecorder?.apply {
-                setAudioSource(MediaRecorder.AudioSource.MIC)
+                setAudioSource(recordingConfig.audioSource)  // Configurable - use VOICE_COMMUNICATION for AEC
                 
                 // Choose output format based on codec and preferRawStream flag
                 val outputFormat = when (recordingConfig.output.compressed.format) {

@@ -1,0 +1,1 @@
+{"version":3,"file":"extractWaveform.d.ts","sourceRoot":"","sources":["../../../src/AudioAnalysis/extractWaveform.ts"],"names":[],"mappings":"AAEA,MAAM,WAAW,oBAAoB;IACjC,OAAO,EAAE,MAAM,CAAA;IACf,eAAe,EAAE,MAAM,CAAA;IACvB,MAAM,CAAC,EAAE,MAAM,CAAA;IACf,MAAM,CAAC,EAAE,MAAM,CAAA;CAClB;AACD,eAAO,MAAM,eAAe,GAAU,+CAKnC,oBAAoB,KAAG,OAAO,CAAC,OAAO,CAQxC,CAAA"}

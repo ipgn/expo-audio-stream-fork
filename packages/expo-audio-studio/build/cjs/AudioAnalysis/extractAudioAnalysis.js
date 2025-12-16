@@ -1,0 +1,205 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.extractRawWavAnalysis = void 0;
+exports.extractAudioAnalysis = extractAudioAnalysis;
+const ExpoAudioStreamModule_1 = __importDefault(require("../ExpoAudioStreamModule"));
+const constants_1 = require("../constants");
+const audioProcessing_1 = require("../utils/audioProcessing");
+const convertPCMToFloat32_1 = require("../utils/convertPCMToFloat32");
+const crc32_1 = __importDefault(require("../utils/crc32"));
+const getWavFileInfo_1 = require("../utils/getWavFileInfo");
+const InlineFeaturesExtractor_web_1 = require("../workers/InlineFeaturesExtractor.web");
+function calculateCRC32ForDataPoint(data) {
+    // Convert float array to byte array for CRC32
+    const byteArray = new Uint8Array(data.length * 4);
+    const dataView = new DataView(byteArray.buffer);
+    for (let i = 0; i < data.length; i++) {
+        dataView.setFloat32(i * 4, data[i], true);
+    }
+    return crc32_1.default.buf(byteArray);
+}
+/**
+ * Extracts detailed audio analysis from the specified audio file or buffer.
+ * Supports either time-based or byte-based ranges for flexibility in analysis.
+ *
+ * @param props - The options for extraction, including file URI, ranges, and decoding settings.
+ * @returns A promise that resolves to the audio analysis data.
+ * @throws {Error} If both time and byte ranges are provided or if required parameters are missing.
+ */
+async function extractAudioAnalysis(props) {
+    const { fileUri, arrayBuffer, decodingOptions, logger, segmentDurationMs = 100, features, } = props;
+    if (constants_1.isWeb) {
+        try {
+            // Create AudioContext here
+            const audioContext = new (window.AudioContext ||
+                window.webkitAudioContext)({
+                sampleRate: decodingOptions?.targetSampleRate ?? 16000,
+            });
+            try {
+                const processedBuffer = await (0, audioProcessing_1.processAudioBuffer)({
+                    arrayBuffer,
+                    fileUri,
+                    targetSampleRate: decodingOptions?.targetSampleRate ?? 16000,
+                    targetChannels: decodingOptions?.targetChannels ?? 1,
+                    normalizeAudio: decodingOptions?.normalizeAudio ?? false,
+                    startTimeMs: 'startTimeMs' in props ? props.startTimeMs : undefined,
+                    endTimeMs: 'endTimeMs' in props ? props.endTimeMs : undefined,
+                    position: 'position' in props ? props.position : undefined,
+                    length: 'length' in props ? props.length : undefined,
+                    audioContext, // Pass the context we created
+                    logger,
+                });
+                const channelData = processedBuffer.buffer.getChannelData(0);
+                // Create and initialize the worker
+                const blob = new Blob([InlineFeaturesExtractor_web_1.InlineFeaturesExtractor], {
+                    type: 'application/javascript',
+                });
+                const workerUrl = URL.createObjectURL(blob);
+                const worker = new Worker(workerUrl);
+                return new Promise((resolve, reject) => {
+                    worker.onmessage = (event) => {
+                        if (event.data.error) {
+                            reject(new Error(event.data.error));
+                            return;
+                        }
+                        const result = event.data.result;
+                        // Calculate CRC32 after worker completes if requested
+                        if (features?.crc32) {
+                            const samplesPerSegment = Math.floor((processedBuffer.sampleRate *
+                                segmentDurationMs) /
+                                1000);
+                            result.dataPoints = result.dataPoints.map((point, index) => {
+                                const startSample = index * samplesPerSegment;
+                                const segmentData = channelData.slice(startSample, startSample + samplesPerSegment);
+                                return {
+                                    ...point,
+                                    features: {
+                                        ...point.features,
+                                        crc32: calculateCRC32ForDataPoint(segmentData),
+                                    },
+                                };
+                            });
+                        }
+                        URL.revokeObjectURL(workerUrl);
+                        worker.terminate();
+                        resolve(result);
+                    };
+                    worker.onerror = (error) => {
+                        URL.revokeObjectURL(workerUrl);
+                        worker.terminate();
+                        reject(error);
+                    };
+                    worker.postMessage({
+                        channelData,
+                        sampleRate: processedBuffer.sampleRate,
+                        segmentDurationMs,
+                        bitDepth: decodingOptions?.targetBitDepth ?? 32,
+                        numberOfChannels: processedBuffer.channels,
+                        fullAudioDurationMs: processedBuffer.durationMs,
+                        // enableLogging: !!logger,
+                        features,
+                    });
+                });
+            }
+            finally {
+                await audioContext.close();
+            }
+        }
+        catch (error) {
+            logger?.error('Failed to process audio:', error);
+            throw error;
+        }
+    }
+    else {
+        return await ExpoAudioStreamModule_1.default.extractAudioAnalysis(props);
+    }
+}
+/**
+ * Analyzes WAV files without decoding, preserving original PCM values.
+ * Use this function when you need to ensure the analysis matches other software by avoiding any transformations.
+ *
+ * @param props - The options for WAV analysis, including file URI and range.
+ * @returns A promise that resolves to the audio analysis data.
+ */
+const extractRawWavAnalysis = async ({ fileUri, segmentDurationMs = 100, // Default to 100ms
+arrayBuffer, bitDepth, durationMs, sampleRate, numberOfChannels, features, logger, position = 0, length, }) => {
+    if (constants_1.isWeb) {
+        if (!arrayBuffer && !fileUri) {
+            throw new Error('Either arrayBuffer or fileUri must be provided');
+        }
+        if (!arrayBuffer) {
+            logger?.log(`fetching fileUri`, fileUri);
+            const response = await fetch(fileUri);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch fileUri: ${response.statusText}`);
+            }
+            arrayBuffer = await response.arrayBuffer();
+            logger?.log(`fetched fileUri`, arrayBuffer.byteLength, arrayBuffer);
+        }
+        // Create a new copy of the ArrayBuffer to avoid detachment issues
+        const bufferCopy = arrayBuffer.slice(0);
+        logger?.log(`extractAudioAnalysis bitDepth=${bitDepth} len=${bufferCopy.byteLength}`, bufferCopy.slice(0, 100));
+        let actualBitDepth = bitDepth;
+        if (!actualBitDepth) {
+            logger?.log(`extractAudioAnalysis bitDepth not provided -- getting wav file info`);
+            const fileInfo = await (0, getWavFileInfo_1.getWavFileInfo)(bufferCopy);
+            actualBitDepth = fileInfo.bitDepth;
+        }
+        logger?.log(`extractAudioAnalysis actualBitDepth=${actualBitDepth}`);
+        const { pcmValues: channelData, min, max, } = await (0, convertPCMToFloat32_1.convertPCMToFloat32)({
+            buffer: arrayBuffer,
+            bitDepth: actualBitDepth,
+        });
+        logger?.log(`extractAudioAnalysis convertPCMToFloat32 length=${channelData.length} range: [ ${min} :: ${max} ]`);
+        // Apply position and length constraints to channelData if specified
+        const startIndex = position;
+        const endIndex = length ? startIndex + length : channelData.length;
+        const constrainedChannelData = channelData.slice(startIndex, endIndex);
+        return new Promise((resolve, reject) => {
+            const blob = new Blob([InlineFeaturesExtractor_web_1.InlineFeaturesExtractor], {
+                type: 'application/javascript',
+            });
+            const url = URL.createObjectURL(blob);
+            const worker = new Worker(url);
+            worker.onmessage = (event) => {
+                resolve(event.data.result);
+            };
+            worker.onerror = (error) => {
+                reject(error);
+            };
+            worker.postMessage({
+                command: 'process',
+                channelData: constrainedChannelData,
+                sampleRate,
+                segmentDurationMs,
+                logger,
+                bitDepth,
+                fullAudioDurationMs: durationMs,
+                numberOfChannels,
+            });
+        });
+    }
+    else {
+        if (!fileUri) {
+            throw new Error('fileUri is required');
+        }
+        logger?.log(`extractAudioAnalysis`, {
+            fileUri,
+            segmentDurationMs,
+        });
+        const res = await ExpoAudioStreamModule_1.default.extractAudioAnalysis({
+            fileUri,
+            segmentDurationMs,
+            features,
+            position,
+            length,
+        });
+        logger?.log(`extractAudioAnalysis`, res);
+        return res;
+    }
+};
+exports.extractRawWavAnalysis = extractRawWavAnalysis;
+//# sourceMappingURL=extractAudioAnalysis.js.map

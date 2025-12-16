@@ -1,7 +1,16 @@
 {
-    "private": true,
-    "name": "expo-audio-studio-fork",
-    "scripts": {
-        "postinstall": "cd packages/expo-audio-studio && npm install --legacy-peer-deps"
-    }
+    "name": "@siteed/expo-audio-studio",
+    "version": "2.18.1",
+    "description": "Comprehensive audio processing library for React Native and Expo",
+    "license": "MIT",
+    "type": "commonjs",
+    "main": "./packages/expo-audio-studio/build/cjs/index.js",
+    "module": "./packages/expo-audio-studio/build/esm/index.js",
+    "types": "./packages/expo-audio-studio/build/types/index.d.ts",
+    "expo": {
+        "plugin": "./packages/expo-audio-studio/app.plugin.js"
+    },
+    "files": [
+        "packages/expo-audio-studio"
+    ]
 }
